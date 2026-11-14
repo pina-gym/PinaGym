@@ -187,3 +187,12 @@ extraClick=function(a,v,el){
  if(a==='theme'){if(can('settings.manage')&&THEMES[v]){S.settings.theme_color=v;log('tema_warna',v);render();toast('Warna diganti: '+THEMES[v][0])}return true}
  if(a==='tmode'){try{localStorage.setItem('pinagym.mode',v)}catch(e){}render();return true}
  return _ec.apply(this,arguments)};
+
+/* ---------- uji login Supabase ---------- */
+{const _pc=P.cloud;
+ P.cloud=()=>{let h=_pc();if(SB.hasCfg()&&!cloudLive()){const rows=(S.diag||[]).map(([t,x])=>t==='code'?`<pre style="background:var(--bg);padding:10px;border-radius:8px;overflow:auto;user-select:all;white-space:pre-wrap">${esc(x)}</pre>`:`<div class="note" style="margin:6px 0;${t==='ok'?'background:var(--ok-bg);color:var(--ok)':t==='err'?'background:var(--err-bg);color:var(--err)':''}">${esc(x)}</div>`).join('');
+  h+=`<form class="card form" data-f="cloudlogintest"><h2>Uji login Supabase</h2><p class="mut">Cek bertahap kenapa login gagal. Tidak mengubah apa pun.</p>${fld('Email atau username','u','','text','required autocomplete="off"')}${fld('Password','p','','password','required autocomplete="off"')}<button class="btn">Uji Login</button>${rows}</form>`}return h}}
+const _es=extraSubmit;
+extraSubmit=function(k,d,f){
+ if(k==='cloudlogintest'){S.diag=[['hint','Menguji…']];render();SB.diagnose(d.u,d.p).then(r=>{S.diag=r;render()});return true}
+ return _es.apply(this,arguments)};

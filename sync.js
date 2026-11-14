@@ -48,6 +48,22 @@ async function login(un,pw,known){
  const pm=await rpc('my_permissions');
  return{ok:true,profile:pr,email:known||mail(un),perms:pm.ok&&Array.isArray(pm.data)?pm.data:[]}}
 function logout(){ses=null;jw(SK,null)}
+/* Uji login bertahap (tanpa masuk ke aplikasi), untuk mencari penyebab gagal login */
+async function diagnose(un,pw){
+ const L=[];if(!cfg)return[['err','Supabase belum diatur']];
+ let r;try{r=await fetch(cfg.url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:cfg.key,'Content-Type':'application/json'},body:JSON.stringify({email:mail(un),password:pw})})}catch(e){return[['err','Tidak ada koneksi ke Supabase']]}
+ const d=await r.json().catch(()=>({}));
+ if(!r.ok){L.push(['err','1. Login Supabase gagal untuk '+mail(un)+': '+(d.error_description||d.msg||d.message||r.status)+(d.error_code?' ('+d.error_code+')':'')]);L.push(['hint','Periksa email dan password. Di Authentication → Users, password bisa direset. Jika user baru, pastikan Auto Confirm User dicentang.']);return L}
+ L.push(['ok','1. Email dan password benar. UID: '+d.user.id]);
+ const h={apikey:cfg.key,Authorization:'Bearer '+d.access_token};
+ const p=await fetch(cfg.url+'/rest/v1/profiles?id=eq.'+d.user.id+'&select=username,name,role,active',{headers:h}).catch(()=>null);
+ const pj=p?await p.json().catch(()=>null):null;
+ if(!p||!p.ok){L.push(['err','2. Gagal membaca tabel profiles: '+((pj&&pj.message)||(p&&p.status)||'tidak ada koneksi')+'. Pastikan schema.sql sudah dijalankan sampai selesai tanpa error.']);return L}
+ if(!pj.length){L.push(['err','2. Akun ini belum punya profil. Jalankan perintah ini di SQL Editor Supabase:']);L.push(['code',"select bootstrap_admin('"+d.user.id+"', 'admin', 'Nama Anda');"]);L.push(['hint','Jika muncul "Profil sudah ada", profil admin sudah dibuat untuk akun lain. Hapus baris di tabel profiles lalu ulangi, atau minta admin itu menambahkan akun ini lewat Manajemen User.']);return L}
+ const x=pj[0];L.push(x.active?['ok','2. Profil ada: '+x.username+' ('+x.role+')']:['err','2. Profil ada tetapi nonaktif. Aktifkan oleh admin.']);
+ const m=await fetch(cfg.url+'/rest/v1/rpc/my_permissions',{method:'POST',headers:{...h,'Content-Type':'application/json'},body:'{}'}).catch(()=>null);const mj=m?await m.json().catch(()=>null):null;
+ L.push(m&&m.ok&&Array.isArray(mj)?['ok','3. Hak akses terbaca: '+mj.length+' izin. Login di aplikasi seharusnya berhasil.']:['err','3. Gagal membaca hak akses: '+((mj&&mj.message)||(m&&m.status)||'tidak ada koneksi')]);
+ return L}
 const live=()=>!!(cfg&&ses);
 const hasCfg=()=>!!cfg;
 
@@ -246,4 +262,4 @@ async function fn(name,body){
   return{ok:false,status:r.status,err:{message:d.error||d.message||('HTTP '+r.status)}}}
  catch(e){return{ok:false,err:{message:'Tidak ada koneksi, atau Edge Function belum dipasang'}}}}
 
-return{st,dirty,cfg:()=>cfg,hasCfg,live,setCfg,test,login,logout,sync,kick,req,rpc,fn,resetFromServer,mail,cleanUrl}})();
+return{st,dirty,diagnose,cfg:()=>cfg,hasCfg,live,setCfg,test,login,logout,sync,kick,req,rpc,fn,resetFromServer,mail,cleanUrl}})();
