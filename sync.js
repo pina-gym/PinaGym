@@ -7,7 +7,7 @@ const jr=k=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){ret
 const jw=(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 let cfg=jr(CK),ses=jr(SK);
 const st={busy:false,err:'',last:0,rej:0,info:''};
-const mail=u=>String(u).trim().toLowerCase()+'@pinagym.app';
+const mail=u=>{u=String(u).trim().toLowerCase();return u.includes('@')?u:u+'@pinagym.app'}; // boleh ketik email lengkap
 const cleanUrl=u=>String(u||'').trim().replace(/\/+$/,'').replace(/\/rest\/v1$/,'');
 
 async function req(path,o={}){
@@ -35,18 +35,18 @@ async function test(){ // uji URL, kunci, dan apakah skema sudah dipasang
  if(r.status===404)return{ok:false,msg:'Terhubung, tetapi skema belum dipasang. Jalankan schema.sql di SQL Editor.'};
  if(!r.ok)return{ok:false,msg:r.err.message};
  const g=(r.data||[]).find(x=>x.key==='gym_name');return{ok:true,msg:'Terhubung. Skema terpasang'+(g?' (gym: '+g.value+')':'')+'.'}}
-async function login(un,pw){
+async function login(un,pw,known){
  if(!cfg)return{ok:false,code:'nocfg'};
- let r;try{r=await fetch(cfg.url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:cfg.key,'Content-Type':'application/json'},body:JSON.stringify({email:mail(un),password:pw})})}catch(e){return{ok:false,code:'net',msg:'Tidak ada koneksi ke Supabase'}}
+ let r;try{r=await fetch(cfg.url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:cfg.key,'Content-Type':'application/json'},body:JSON.stringify({email:known||mail(un),password:pw})})}catch(e){return{ok:false,code:'net',msg:'Tidak ada koneksi ke Supabase'}}
  const d=await r.json().catch(()=>({}));
- if(!r.ok)return{ok:false,code:r.status===400?'cred':'err',msg:d.error_description||d.msg||d.message||('HTTP '+r.status)};
+ if(!r.ok)return{ok:false,code:r.status===400?'cred':'err',msg:d.error_description||d.msg||d.message||('HTTP '+r.status),email:known||mail(un),status:r.status};
  ses={access:d.access_token,refresh:d.refresh_token,exp:Date.now()+(d.expires_in||3600)*1000,uid:d.user.id};jw(SK,ses);
  const p=await req('/rest/v1/profiles?id=eq.'+ses.uid+'&select=*');
  const pr=p.ok&&p.data&&p.data[0];
  if(!pr){logout();return{ok:false,code:'noprof',msg:'Akun belum punya profil. Jalankan bootstrap_admin atau tambahkan lewat Manajemen User.'}}
  if(!pr.active){logout();return{ok:false,code:'off',msg:'Akun dinonaktifkan.'}}
  const pm=await rpc('my_permissions');
- return{ok:true,profile:pr,perms:pm.ok&&Array.isArray(pm.data)?pm.data:[]}}
+ return{ok:true,profile:pr,email:known||mail(un),perms:pm.ok&&Array.isArray(pm.data)?pm.data:[]}}
 function logout(){ses=null;jw(SK,null)}
 const live=()=>!!(cfg&&ses);
 const hasCfg=()=>!!cfg;
@@ -199,7 +199,7 @@ async function pullAll(){
  // staf
  {const r=await req('/rest/v1/staff?select=*');
   if(r.ok){const keep=S.users.filter(u=>!u.cloud);const old=new Map(S.users.filter(u=>u.cloud).map(u=>[u.id,u]));
-   S.users=keep.concat(r.data.map(x=>({id:x.id,name:x.name,username:x.username,role:x.role,on:x.active?1:0,cloud:1,salt:(old.get(x.id)||{}).salt,ph:(old.get(x.id)||{}).ph}))).filter(u=>ROLES[u.role])}}
+   S.users=keep.concat(r.data.map(x=>({id:x.id,name:x.name,username:x.username,role:x.role,on:x.active?1:0,cloud:1,salt:(old.get(x.id)||{}).salt,ph:(old.get(x.id)||{}).ph,email:(old.get(x.id)||{}).email}))).filter(u=>ROLES[u.role])}}
  // hak akses role (tampilan)
  {const r=await req('/rest/v1/role_permissions?select=role,perm');
   if(r.ok){const m={};r.data.forEach(x=>(m[x.role]=m[x.role]||new Set()).add(x.perm));Object.keys(S.rolePerms).forEach(k=>{if(k!=='admin'&&m[k])S.rolePerms[k]=m[k]})}}

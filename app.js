@@ -70,14 +70,14 @@ async function doLogin(un,pw){
  if(S.lock&&Date.now()<S.lock){S.msg='Terlalu banyak percobaan. Coba lagi beberapa detik lagi.';render();return}
  un=String(un).trim().toLowerCase();pw=String(pw);
  let cl=null;
- if(SB.hasCfg()){cl=await SB.login(un,pw);
+ if(SB.hasCfg()){const kn=S.users.find(x=>x.cloud&&x.username===un&&x.email);cl=await SB.login(un,pw,kn&&kn.email);
   if(cl.ok){const pr=cl.profile;let u=S.users.find(x=>x.id===pr.id);if(!u){u={id:pr.id,cloud:1};S.users.push(u)}
-   Object.assign(u,{name:pr.name,username:pr.username,role:pr.role,on:1,cloud:1});await setPw(u,pw);
+   Object.assign(u,{name:pr.name,username:pr.username,role:pr.role,on:1,cloud:1,email:cl.email});await setPw(u,pw);
    S.cperm=S.cperm||{};S.cperm[pr.id]=cl.perms;S.myPerms=new Set(cl.perms);S.f=0;S.user=u;S.page='dashboard';S.cart={};
    try{history.replaceState(null,'',location.pathname+'#dashboard')}catch(e){}touch();saveSession();log('login',u.username+' (supabase)');render();if(S.sbinit)SB.sync();else firstSync();return}
   if(cl.code==='noprof'||cl.code==='off'){S.msg=cl.msg;render();return}}
  const u=S.users.find(x=>x.username===un&&x.on&&x.ph);const ok=u&&(await hashPw(pw,u.salt))===u.ph;
- if(!ok){log('login_gagal',un.slice(0,40));S.f=(S.f||0)+1;if(S.f>=5){S.lock=Date.now()+30000;S.f=0}S.msg=cl&&(cl.code==='net')&&!navigator.onLine?'Username atau password salah (mode offline memakai password login terakhir di perangkat ini).':'Username atau password salah.';render();return}
+ if(!ok){log('login_gagal',un.slice(0,40));S.f=(S.f||0)+1;if(S.f>=5){S.lock=Date.now()+30000;S.f=0}S.msg=!cl?'Username atau password salah.':cl.code==='net'?'Tidak bisa terhubung ke Supabase, dan akun ini belum pernah masuk di perangkat ini. Periksa internet. Login offline hanya untuk akun yang pernah masuk di perangkat ini.':cl.code==='cred'?'Supabase menolak login untuk email '+cl.email+': '+cl.msg+'. Periksa password. Jika akun Supabase memakai email lain, ketik email lengkapnya di kolom Username. Pastikan juga user dibuat dengan Auto Confirm.':'Supabase: '+cl.msg;render();return}
  S.f=0;S.user=u;S.myPerms=null;S.page='dashboard';S.cart={};try{history.replaceState(null,'',location.pathname+'#dashboard')}catch(e){}touch();saveSession();log('login',u.username);render();if(u.cloud&&SB.hasCfg())S.msg=''}
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();window._ip=e;const i=document.querySelector('form[data-f=login] input[name=username]');if(!i||!i.value)render()});
 addEventListener('appinstalled',()=>{window._ip=null;render()});
