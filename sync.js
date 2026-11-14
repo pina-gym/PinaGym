@@ -194,7 +194,7 @@ async function pullAll(){
    if(!S.tpl.some(t=>t.id===S.wa.t))S.wa.t=S.tpl[0].id;L.wa_templates=maxTs(rows,L.wa_templates)||L.wa_templates}}
  // pengaturan
  {const r=await req('/rest/v1/settings?select=key,value');
-  if(r.ok)for(const x of r.data){if(!(x.key in S.settings)&&!/^(gym_|session_|expiring_|remind_)/.test(x.key))continue;const cur=B('settings')[x.key];const lv=sig({key:x.key,value:String(S.settings[x.key])});
+  if(r.ok)for(const x of r.data){if(!(x.key in S.settings)&&!/^(gym_|session_|expiring_|remind_|theme_)/.test(x.key))continue;const cur=B('settings')[x.key];const lv=sig({key:x.key,value:String(S.settings[x.key])});
    if(cur!==undefined&&cur!==lv)continue;S.settings[x.key]=x.value!==''&&!isNaN(x.value)&&!/^(gym_|remind_)/.test(x.key)?+x.value:x.value;B('settings')[x.key]=sig({key:x.key,value:String(S.settings[x.key])})}}
  // staf
  {const r=await req('/rest/v1/staff?select=*');

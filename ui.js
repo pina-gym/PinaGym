@@ -162,3 +162,28 @@ function firstSync(){
  if(can('settings.manage')&&(S.members.length||S.products.length)){
   modal(`<h2 style="margin:0 0 8px">Sinkron pertama</h2><p>Terhubung ke Supabase. Pilih sumber data:</p><p><button class="btn" data-a="sbpull" style="width:100%;margin-bottom:8px">Pakai data Supabase (ganti data lokal)</button><button class="btn ghost" data-a="sbpush" style="width:100%">Unggah data lokal ke Supabase</button></p><p class="mut">Jika data di perangkat ini hanya data contoh, pilih yang pertama. Jika sudah ada data nyata di sini dan Supabase masih kosong, pilih yang kedua.</p>`)}
  else SB.resetFromServer().then(()=>render())}
+
+/* ---------- tema warna ---------- */
+// [nama, terang: utama, hover, lembut | gelap: utama, hover, lembut, teks di atas utama]
+const THEMES={oranye:['Oranye',null],biru:['Biru',['#2563eb','#1d4ed8','#e8f0ff','#60a5fa','#93c5fd','#10203d','#07101f']],hijau:['Hijau',['#16a34a','#15803d','#e6f7ec','#4ade80','#86efac','#0f2a1a','#04150a']],
+ ungu:['Ungu',['#7c3aed','#6d28d9','#f0e9ff','#a78bfa','#c4b5fd','#1e1535','#0e0820']],merah:['Merah',['#dc2626','#b91c1c','#ffe9e9','#f87171','#fca5a5','#351515','#1f0606']],
+ teal:['Teal',['#0d9488','#0f766e','#e0f5f2','#2dd4bf','#5eead4','#0e2a27','#03181a']],abu:['Abu-abu',['#334155','#1e293b','#eef1f5','#cbd5e1','#e2e8f0','#1c2330','#0b1017']]};
+const getMode=()=>{try{return localStorage.getItem('pinagym.mode')||'auto'}catch(e){return'auto'}};
+function applyTheme(){
+ const t=THEMES[S.settings.theme_color]||THEMES.oranye,c=t[1],m=getMode(),root=document.documentElement;
+ if(m==='auto')root.removeAttribute('data-theme');else root.setAttribute('data-theme',m);
+ let st=document.getElementById('thm');if(!st){st=document.createElement('style');st.id='thm';document.head.appendChild(st)}
+ const L=c?`--brand:${c[0]};--brand-d:${c[1]};--brand-soft:${c[2]}`:'',D=c?`--brand:${c[3]};--brand-d:${c[4]};--brand-soft:${c[5]};--brand-ink:${c[6]}`:'';
+ st.textContent=c?`:root{${L}}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){${D}}}:root[data-theme="dark"]{${D}}`:'';
+ const dark=m==='dark'||(m==='auto'&&matchMedia('(prefers-color-scheme:dark)').matches);
+ const mt=document.querySelector('meta[name=theme-color]');if(mt)mt.content=dark?'#11151c':(c?c[0]:'#e8590c')}
+{const _rv=renderView;renderView=function(){applyTheme();return _rv.apply(this,arguments)}}
+const _sys=P.system;
+P.system=()=>_sys()+`<div class="card"><h2>Tampilan</h2><p class="mut">Warna utama berlaku untuk semua perangkat setelah tersinkron. Mode terang/gelap hanya untuk perangkat ini.</p>
+ <div class="pill" style="flex-wrap:wrap;gap:10px">${Object.entries(THEMES).map(([k,[n,c]])=>{const on=(S.settings.theme_color||'oranye')===k;return`<button class="btn ghost" data-a="theme" data-v="${k}" aria-pressed="${on}" style="${on?'border:2px solid var(--brand);':''}"><span style="width:16px;height:16px;border-radius:50%;background:${c?c[0]:'#e8590c'};display:inline-block"></span>${n}</button>`}).join('')}</div>
+ <p class="pill" style="flex-wrap:wrap;margin-top:12px">${[['auto','Otomatis (ikut perangkat)'],['light','Terang'],['dark','Gelap']].map(([k,n])=>`<button class="btn ${getMode()===k?'':'ghost'}" data-a="tmode" data-v="${k}">${n}</button>`).join('')}</p></div>`;
+const _ec=extraClick;
+extraClick=function(a,v,el){
+ if(a==='theme'){if(can('settings.manage')&&THEMES[v]){S.settings.theme_color=v;log('tema_warna',v);render();toast('Warna diganti: '+THEMES[v][0])}return true}
+ if(a==='tmode'){try{localStorage.setItem('pinagym.mode',v)}catch(e){}render();return true}
+ return _ec.apply(this,arguments)};
