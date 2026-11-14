@@ -186,6 +186,17 @@ create table if not exists public.wa_templates (
   updated_at timestamptz not null default now()
 );
 
+-- Catatan pesan WhatsApp yang sudah dikirim (sambutan dan pengingat), agar tidak dikirim dua kali
+-- walaupun dari perangkat berbeda. Kolom k berisi kunci unik, contoh: w|<member> atau <member>|<tgl akhir>|h3.
+create table if not exists public.wa_log (
+  id         uuid primary key default gen_random_uuid(),
+  k          text not null unique,
+  member_id  uuid references public.members(id) on delete set null,
+  created_by uuid references public.profiles(id) default auth.uid(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.activity_log (
   id         bigint generated always as identity primary key,
   user_id    uuid default auth.uid(),
@@ -228,7 +239,7 @@ do $$
 declare t text;
 begin
   foreach t in array array['profiles','settings','packages','members','member_contacts','checkins',
-    'products','product_costs','shifts','transactions','transaction_items','wa_templates'] loop
+    'products','product_costs','shifts','transactions','transaction_items','wa_templates','wa_log'] loop
     execute format('drop trigger if exists trg_touch on public.%I', t);
     execute format('create trigger trg_touch before insert or update on public.%I
                     for each row execute function public.touch_updated_at()', t);
@@ -470,7 +481,7 @@ declare t text;
 begin
   foreach t in array array['roles','permissions','role_permissions','profiles','user_permissions','settings',
     'packages','members','member_contacts','checkins','products','product_costs','shifts','transactions',
-    'transaction_items','transaction_item_costs','wa_templates','activity_log'] loop
+    'transaction_items','transaction_item_costs','wa_templates','wa_log','activity_log'] loop
     execute format('alter table public.%I enable row level security', t);
   end loop;
 end $$;
@@ -592,6 +603,15 @@ drop policy if exists wa_write on public.wa_templates;
 create policy wa_write on public.wa_templates for all to authenticated
   using (public.has_perm('whatsapp.manage')) with check (public.has_perm('whatsapp.manage'));
 
+drop policy if exists walog_read on public.wa_log;
+create policy walog_read on public.wa_log for select to authenticated
+  using (public.has_perm('whatsapp.send') or public.has_perm('whatsapp.manage'));
+drop policy if exists walog_insert on public.wa_log;
+create policy walog_insert on public.wa_log for insert to authenticated with check (public.has_perm('whatsapp.send'));
+drop policy if exists walog_update on public.wa_log;
+create policy walog_update on public.wa_log for update to authenticated
+  using (public.has_perm('whatsapp.send')) with check (public.has_perm('whatsapp.send'));
+
 -- Activity log: tambah-saja.
 drop policy if exists log_read on public.activity_log;
 create policy log_read on public.activity_log for select to authenticated using (public.has_perm('log.view'));
@@ -609,7 +629,7 @@ revoke insert, update, delete on public.transactions, public.transaction_items, 
   public.activity_log, public.roles, public.permissions from authenticated;
 grant insert on public.activity_log to authenticated;
 revoke update, delete on public.checkins from authenticated;
-revoke delete on public.members, public.packages, public.products, public.profiles, public.shifts from authenticated;
+revoke delete on public.members, public.packages, public.products, public.profiles, public.shifts, public.wa_log from authenticated;
 revoke select, insert, update, delete on public.staff, public.public_settings from authenticated;
 grant select on public.staff to authenticated;
 grant select on public.public_settings to anon, authenticated;
@@ -700,7 +720,7 @@ declare t text;
 begin
   if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
     foreach t in array array['members','member_contacts','checkins','packages','products','product_costs',
-      'shifts','transactions','transaction_items','transaction_item_costs','settings','wa_templates'] loop
+      'shifts','transactions','transaction_items','transaction_item_costs','settings','wa_templates','wa_log'] loop
       if not exists (select 1 from pg_publication_tables
                      where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t) then
         execute format('alter publication supabase_realtime add table public.%I', t);

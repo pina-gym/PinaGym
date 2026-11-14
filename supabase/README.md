@@ -24,7 +24,7 @@ Login di aplikasi memakai username; emailnya dibentuk otomatis `<username>@pinag
 | Akses | `roles`, `permissions`, `role_permissions`, `profiles`, `user_permissions`, `settings` |
 | Gym | `packages`, `members`, `member_contacts`, `checkins` |
 | Penjualan | `products`, `product_costs`, `shifts`, `transactions`, `transaction_items`, `transaction_item_costs` |
-| Lainnya | `wa_templates`, `activity_log` |
+| Lainnya | `wa_templates`, `wa_log` (pesan WA yang sudah dikirim), `activity_log` |
 
 ## Keamanan
 
@@ -35,9 +35,28 @@ Login di aplikasi memakai username; emailnya dibentuk otomatis `<username>@pinag
 - Pengguna tidak bisa mengubah role/status dirinya sendiri, dan harus selalu ada satu admin aktif.
 - `bootstrap_admin` tidak bisa dipanggil dari aplikasi, hanya SQL Editor, dan hanya jika belum ada profil.
 
-## Pembuatan user oleh admin
+## Edge Function `admin-users` (kelola user dari aplikasi)
 
-Membuat akun login butuh `service_role`, jadi tidak boleh dari browser. Cara yang direncanakan: Supabase Edge Function `create-user` (memeriksa `has_perm('user.manage')` lalu memanggil Auth Admin API dan menambah baris `profiles`). Sementara itu, buat user lewat dashboard (langkah 4) lalu tambahkan profilnya dari menu Manajemen User di aplikasi.
+Membuat akun login, reset password, dan menghapus user butuh kunci `service_role`, jadi dijalankan di server, bukan di browser.
+
+1. Supabase Dashboard → **Edge Functions** → **Deploy a new function** → nama `admin-users`.
+2. Tempel isi `supabase/functions/admin-users/index.ts`, lalu Deploy. Biarkan *Verify JWT* aktif.
+3. Setelah itu menu **Manajemen User** di aplikasi (saat login akun Supabase) bisa tambah user, reset password, dan hapus.
+
+Fungsi ini memeriksa `has_perm('user.manage')` si pemanggil. User yang sudah punya riwayat transaksi tidak dihapus, tetapi dinonaktifkan agar riwayatnya utuh. Admin aktif terakhir tidak bisa dihapus. Tanpa fungsi ini, buat user lewat Authentication → Users lalu tambahkan profilnya dengan SQL.
+
+## Menghubungkan aplikasi
+
+Di aplikasi (login admin): menu **Koneksi Database** → isi Project URL dan anon key → **Simpan & Uji Koneksi**. Lalu keluar dan masuk memakai akun Supabase (username admin yang dibuat saat bootstrap). Pada login pertama pilih: ambil data dari Supabase, atau unggah data lokal.
+
+## Cara sinkron
+
+- Semua perubahan ditulis ke perangkat lebih dulu, jadi aplikasi tetap jalan tanpa internet.
+- Saat online, aplikasi mengirim perubahan lalu menarik perubahan server (otomatis tiap beberapa detik setelah ada perubahan, saat kembali online, dan tiap 60 detik).
+- Transaksi dikirim lewat fungsi RPC. Harga, stok, dan tanggal berakhir membership dihitung server. Jika penjualan terjadi saat offline lalu terkirim beberapa hari kemudian, masa aktif dihitung dari hari terkirim.
+- Bentrok edit yang sama: data terakhir yang masuk menang. Stok dikurangi server per transaksi, jadi dua kasir offline tidak saling menimpa stok (stok bisa minus jika barang terakhir terjual di dua perangkat).
+- Kode member bentrok antar perangkat (jarang): perangkat yang terlambat mengirim otomatis dapat kode berikutnya.
+- Shift kasir dan activity log masih lokal per perangkat.
 
 ## Siap offline-first
 

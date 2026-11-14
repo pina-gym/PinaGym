@@ -5,6 +5,7 @@ const rp=n=>'Rp '+Math.round(n).toLocaleString('id-ID');
 const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 const addD=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
 const TODAY=new Date();TODAY.setHours(0,0,0,0);const T0=iso(TODAY);
+const uid=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=crypto.getRandomValues(new Uint8Array(1))[0]&15;return(c==='x'?r:(r&3|8)).toString(16)});
 const hhmm=()=>new Date().toTimeString().slice(0,5);
 let sd=7;const rnd=()=>(sd=(sd*16807)%2147483647)/2147483647;const ri=(a,b)=>a+Math.floor(rnd()*(b-a+1));
 const IC={home:'M3 11l9-8 9 8v10H3z',users:'M16 8a4 4 0 11-8 0 4 4 0 018 0zM4 21c0-4 4-6 8-6s8 2 8 6',plus:'M12 5v14M5 12h14',card:'M3 6h18v12H3zM3 10h18',scan:'M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4M4 12h16',cart:'M3 4h3l2 11h10l2-8H7M9 20h.01M17 20h.01',box:'M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10',receipt:'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6',clock:'M12 3a9 9 0 100 18 9 9 0 000-18zM12 7v5l3 2',cal:'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',chart:'M4 20V4M4 20h16M8 16v-5M12 16V8M16 16v-3',cog:'M12 9a3 3 0 100 6 3 3 0 000-6zM12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2',shield:'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z',wallet:'M3 7h16a2 2 0 012 2v9H3zM3 7V5h13M17 13h2',check:'M5 12l5 5 9-10',tv:'M3 5h18v12H3zM8 21h8',chat:'M4 5h16v11H9l-5 4z',key:'M14 10a4 4 0 11-3 3l-8 8v-3h3v-3h3z',db:'M4 6c0-2 16-2 16 0v12c0 2-16 2-16 0zM4 6c0 2 16 2 16 0M4 12c0 2 16 2 16 0',list:'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01',user:'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21c0-4 4-6 8-6s8 2 8 6',dumb:'M3 9v6M6 7v10M18 7v10M21 9v6M6 12h12',refresh:'M20 12a8 8 0 10-3 6M20 5v5h-5',print:'M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z',info:'M12 3a9 9 0 100 18 9 9 0 000-18zM12 11v5M12 8h.01',menu:'M4 6h16M4 12h16M4 18h16'};
@@ -21,52 +22,69 @@ const QUICK={kasir:['dashboard','pos','transactions','shifts'],receptionist:['da
 /* ---------- data contoh ---------- */
 const NAMES=['Andi Saputra','Bima Pratama','Citra Lestari','Dian Permata','Eko Wijaya','Fajar Nugroho','Gita Anjani','Hendra Kusuma','Intan Maharani','Joko Susilo','Kiki Amelia','Lukman Hakim','Maya Sari','Naufal Rizky','Putri Ayu','Rudi Hartono','Sinta Dewi','Tono Wibowo','Umar Faruq','Vina Oktavia','Wahyu Hidayat','Yuni Astuti','Zaki Ramadhan','Agus Salim'];
 const ENDS=[20,45,3,5,-4,-10,60,100,2,200,15,-30,7,25,80,1,-2,30,50,12,6,90,-15,40];
-const PKG=[{id:1,name:'Harian',days:1,price:25000,on:1},{id:2,name:'Bulanan',days:30,price:250000,on:1},{id:3,name:'3 Bulan',days:90,price:650000,on:1},{id:4,name:'Tahunan',days:365,price:2200000,on:1}];
+const DEFPKG=()=>[['Harian',1,25000],['Bulanan',30,250000],['3 Bulan',90,650000],['Tahunan',365,2200000]].map(p=>({id:uid(),name:p[0],days:p[1],price:p[2],on:1}));
+const PKG=DEFPKG();
+const pkgName=id=>(PKG.find(p=>p.id===id)||{name:'(dihapus)'}).name;
 const DEFPROD=[['Air Mineral',5000,2500,120],['Protein Shake',25000,15000,40],['Whey Sachet',30000,20000,8],['Handuk Gym',35000,20000,25],['Sarung Tangan',85000,55000,6],['Minuman Isotonik',10000,6000,60]];
-const S={user:null,page:'dashboard',drawer:false,shift:true,cart:{},filter:'',q:'',wa:{t:1,g:'new'},permRole:'kasir',
- settings:{gym_name:'PinaGym',gym_address:'Jl. Raya Subang No. 12',gym_phone:'081234567890',session_timeout:30,expiring_days:7},
+const S={user:null,page:'dashboard',drawer:false,shift:true,cart:{},filter:'',q:'',wa:{t:'t1',g:'new'},permRole:'kasir',
+ settings:{gym_name:'PinaGym',gym_address:'Jl. Raya Subang No. 12',gym_phone:'081234567890',session_timeout:30,expiring_days:7,remind_days:'7,3,1,0'},dev:Math.random().toString(36).slice(2,4).toUpperCase(),base:{},tomb:[],wlog:[],
  rolePerms:Object.fromEntries(Object.entries(ROLEDEF).map(([k,v])=>[k,new Set(v)])),log:[],members:[],tx:[],checkins:[],seq:1000,msg:'',
  users:[{id:'admin',name:'Administrator',username:'admin',role:'admin',on:1},{id:'kasir',name:'Rina Kasir',username:'kasir',role:'kasir',on:1},{id:'receptionist',name:'Dewi Resepsionis',username:'resepsionis',role:'receptionist',on:1}],
  products:[],
- tpl:[{id:1,name:'Pengingat Expired',body:'Halo {nama}, membership Anda di {gym} akan berakhir pada {tanggal}. Yuk perpanjang agar latihan tetap lancar!'},{id:2,name:'Selamat Datang',body:'Selamat bergabung di {gym}, {nama}! Kode member Anda: {kode}.'},{id:3,name:'Membership Habis',body:'Halo {nama}, membership Anda sudah berakhir pada {tanggal}. Hubungi kami untuk perpanjangan.'}]};
-function seedData(){sd=7;S.products=DEFPROD.map((p,i)=>({id:i+1,name:p[0],price:p[1],cost:p[2],stock:p[3]}));
+ tpl:[{id:'t1',name:'Pengingat Expired',body:'Halo {nama}, membership Anda di {gym} akan berakhir pada {tanggal}. Yuk perpanjang agar latihan tetap lancar!'},{id:'t2',name:'Selamat Datang',body:'Selamat bergabung di {gym}, {nama}! Kode member Anda: {kode}.'},{id:'t3',name:'Membership Habis',body:'Halo {nama}, membership Anda sudah berakhir pada {tanggal}. Hubungi kami untuk perpanjangan.'}]};
+function seedData(){sd=7;PKG.length=0;PKG.push(...DEFPKG());S.products=DEFPROD.map((p,i)=>({id:uid(),name:p[0],price:p[1],cost:p[2],stock:p[3]}));
 S.members=NAMES.map((n,i)=>{const pk=[2,3,2,2,2,2,3,4,2,4,2,2,2,2,3,2,2,2,3,2,2,3,2,2][i];const fr=i===5||i===17;const end=fr?20:ENDS[i];
- return{id:i+1,code:'GYM'+String(i+1).padStart(4,'0'),name:n,phone:'08'+(1100000000+ri(0,899999999)),pkg:pk,end:iso(addD(TODAY,end)),freeze:fr,joined:iso(addD(TODAY,i<6?-ri(0,5):-ri(20,200)))}});
+ return{id:uid(),code:'GYM'+String(i+1).padStart(4,'0'),name:n,phone:'08'+(1100000000+ri(0,899999999)),pkg:PKG[pk-1].id,end:iso(addD(TODAY,end)),freeze:fr,joined:iso(addD(TODAY,i<6?-ri(0,5):-ri(20,200)))}});
 S.tx=[];S.checkins=[];let inv=0;
 for(let o=-13;o<=0;o++){const d=iso(addD(TODAY,o));
- for(let t=0;t<ri(1,3);t++){const pk=PKG[[0,1,1,2,3][ri(0,4)]];S.tx.push({id:++inv,inv:'INV'+d.replace(/-/g,'').slice(2)+String(inv).padStart(4,'0'),date:d,time:String(ri(8,19)).padStart(2,'0')+':'+String(ri(10,59)),type:'membership',by:ri(0,1)?'kasir':'receptionist',method:ri(0,1)?'cash':'noncash',total:pk.price,items:[{name:'Membership '+pk.name,qty:1,price:pk.price,cost:0}]})}
- for(let t=0;t<ri(3,6);t++){const p=S.products[ri(0,5)],q=ri(1,3);S.tx.push({id:++inv,inv:'INV'+d.replace(/-/g,'').slice(2)+String(inv).padStart(4,'0'),date:d,time:String(ri(8,20)).padStart(2,'0')+':'+String(ri(10,59)),type:'pos',by:'kasir',method:['cash','cash','noncash'][ri(0,2)],total:p.price*q,items:[{name:p.name,qty:q,price:p.price,cost:p.cost}]})}
- for(let c=0;c<ri(8,18);c++)S.checkins.push({date:d,time:String(ri(6,20)).padStart(2,'0')+':'+String(ri(10,59)),m:ri(1,24)})}
-S.seq=1000+inv;S.shift=true}
+ for(let t=0;t<ri(1,3);t++){const pk=PKG[[0,1,1,2,3][ri(0,4)]];S.tx.push({id:uid(),inv:'INV'+d.replace(/-/g,'').slice(2)+String(++inv).padStart(4,'0')+'-'+S.dev,date:d,time:String(ri(8,19)).padStart(2,'0')+':'+String(ri(10,59)),type:'membership',by:ri(0,1)?'kasir':'receptionist',method:ri(0,1)?'cash':'noncash',total:pk.price,items:[{name:'Membership '+pk.name,qty:1,price:pk.price,cost:0}]})}
+ for(let t=0;t<ri(3,6);t++){const p=S.products[ri(0,5)],q=ri(1,3);S.tx.push({id:uid(),inv:'INV'+d.replace(/-/g,'').slice(2)+String(++inv).padStart(4,'0')+'-'+S.dev,date:d,time:String(ri(8,20)).padStart(2,'0')+':'+String(ri(10,59)),type:'pos',by:'kasir',method:['cash','cash','noncash'][ri(0,2)],total:p.price*q,items:[{name:p.name,qty:q,price:p.price,cost:p.cost}]})}
+ for(let c=0;c<ri(8,18);c++)S.checkins.push({id:uid(),date:d,time:String(ri(6,20)).padStart(2,'0')+':'+String(ri(10,59)),m:S.members[ri(1,24)-1].id})}
+S.seq=1000+inv;S.shift=true;S.base={};S.tomb=[];S.wlog=[]}
 
 /* ---------- helpers ---------- */
 
 /* ---------- penyimpanan lokal, password, sesi ---------- */
 const KEY='pinagym.v1';
 const DEFPW={admin:'admin123',kasir:'kasir123',resepsionis:'resepsionis123'};
-function snap(){return{v:1,members:S.members,tx:S.tx,checkins:S.checkins,products:S.products,tpl:S.tpl,users:S.users,settings:S.settings,pkg:PKG,shift:S.shift,seq:S.seq,log:S.log.slice(0,300),rolePerms:Object.fromEntries(Object.entries(S.rolePerms).map(([k,v])=>[k,[...v]]))}}
-function hydrate(d){['members','tx','checkins','products','tpl','users','log'].forEach(k=>{if(Array.isArray(d[k]))S[k]=d[k]});if(d.settings)Object.assign(S.settings,d.settings);if(Array.isArray(d.pkg)){PKG.length=0;PKG.push(...d.pkg)}if(d.rolePerms)Object.keys(S.rolePerms).forEach(k=>{if(Array.isArray(d.rolePerms[k]))S.rolePerms[k]=new Set(d.rolePerms[k])});S.users=S.users.filter(u=>ROLES[u.role]);S.shift=!!d.shift;S.seq=d.seq||1000}
-function persist(){try{localStorage.setItem(KEY,JSON.stringify(snap()))}catch(e){}}
+function snap(){return{v:2,members:S.members,tx:S.tx,checkins:S.checkins,products:S.products,tpl:S.tpl,users:S.users,settings:S.settings,pkg:PKG,shift:S.shift,seq:S.seq,dev:S.dev,base:S.base,tomb:S.tomb,wlog:S.wlog,cperm:S.cperm,sbinit:S.sbinit,lp:S.lp,log:S.log.slice(0,300),rolePerms:Object.fromEntries(Object.entries(S.rolePerms).map(([k,v])=>[k,[...v]]))}}
+function migrate(d){if((d.v||1)>=2)return d;const pm={},mm={};
+ d.pkg=(d.pkg||[]).map(p=>{const n=uid();pm[p.id]=n;return{...p,id:n}});
+ d.members=(d.members||[]).map(m=>{const n=uid();mm[m.id]=n;return{...m,id:n,pkg:pm[m.pkg]||(d.pkg[0]||{}).id}});
+ d.products=(d.products||[]).map(p=>({...p,id:uid()}));
+ d.checkins=(d.checkins||[]).map(c=>({...c,id:uid(),m:mm[c.m]}));
+ d.tx=(d.tx||[]).map(t=>({...t,id:uid()}));
+ d.tpl=(d.tpl||[]).map(t=>({...t,id:'t'+t.id}));d.v=2;return d}
+function hydrate(d){d=migrate(d);['members','tx','checkins','products','tpl','users','log','tomb','wlog'].forEach(k=>{if(Array.isArray(d[k]))S[k]=d[k]});if(d.base&&typeof d.base==='object')S.base=d.base;if(d.dev)S.dev=d.dev;if(d.cperm)S.cperm=d.cperm;S.sbinit=!!d.sbinit;if(d.lp)S.lp=d.lp;if(d.settings)Object.assign(S.settings,d.settings);if(Array.isArray(d.pkg)){PKG.length=0;PKG.push(...d.pkg)}if(d.rolePerms)Object.keys(S.rolePerms).forEach(k=>{if(Array.isArray(d.rolePerms[k]))S.rolePerms[k]=new Set(d.rolePerms[k])});S.users=S.users.filter(u=>ROLES[u.role]);S.users=S.users.filter((u,i,a)=>a.findIndex(x=>x.id===u.id)===i);S.shift=!!d.shift;S.seq=d.seq||1000;S.wa={t:S.tpl[0]?S.tpl[0].id:'t1',g:'new'}}
+function persist(q){try{localStorage.setItem(KEY,JSON.stringify(snap()))}catch(e){}if(!q&&typeof SB!=='undefined'&&SB.live()&&S.user&&S.user.cloud&&SB.dirty())SB.kick()}
 const rndSalt=()=>[...crypto.getRandomValues(new Uint8Array(16))].map(x=>x.toString(16).padStart(2,'0')).join('');
 async function hashPw(pw,salt){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);const b=await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode(salt),iterations:150000,hash:'SHA-256'},k,256);return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 async function setPw(u,pw){u.salt=rndSalt();u.ph=await hashPw(pw,u.salt);u.def=0}
 async function seedUsers(){for(const u of S.users){if(!u.ph){u.salt=rndSalt();u.ph=await hashPw(DEFPW[u.username]||'pinagym123',u.salt);u.def=1}}}
 function touch(){S.last=Date.now()}
 function saveSession(){try{S.user?sessionStorage.setItem('pg.s',JSON.stringify({id:S.user.id,last:S.last})):sessionStorage.removeItem('pg.s')}catch(e){}}
-function restoreSession(){try{const x=JSON.parse(sessionStorage.getItem('pg.s')||'null');if(x&&Date.now()-x.last<(+S.settings.session_timeout||30)*60000){const u=S.users.find(y=>y.id===x.id&&y.on);if(u){S.user=u;S.last=x.last;const k=(location.hash||'').slice(1);if(MENU.some(m=>m[0]===k))S.page=k}}}catch(e){}}
+function restoreSession(){try{const x=JSON.parse(sessionStorage.getItem('pg.s')||'null');if(x&&Date.now()-x.last<(+S.settings.session_timeout||30)*60000){const u=S.users.find(y=>y.id===x.id&&y.on);if(u){S.user=u;S.myPerms=null;S.last=x.last;const k=(location.hash||'').slice(1);if(MENU.some(m=>m[0]===k))S.page=k}}}catch(e){}}
 function startIdle(){['click','keydown','touchstart','input'].forEach(ev=>addEventListener(ev,()=>{if(S.user){touch();saveSession()}},{passive:true}));
- setInterval(()=>{if(S.user&&Date.now()-S.last>(+S.settings.session_timeout||30)*60000){log('sesi_berakhir');S.user=null;S.cart={};saveSession();S.msg='Sesi berakhir karena tidak aktif. Silakan login kembali.';render()}},15000)}
+ setInterval(()=>{if(S.user&&Date.now()-S.last>(+S.settings.session_timeout||30)*60000){log('sesi_berakhir');S.user=null;S.myPerms=null;SB.logout();S.cart={};saveSession();S.msg='Sesi berakhir karena tidak aktif. Silakan login kembali.';render()}},15000)}
 async function doLogin(un,pw){
  if(S.lock&&Date.now()<S.lock){S.msg='Terlalu banyak percobaan. Coba lagi beberapa detik lagi.';render();return}
- const u=S.users.find(x=>x.username===String(un).trim()&&x.on);const ok=u&&(await hashPw(String(pw),u.salt))===u.ph;
- if(!ok){log('login_gagal',String(un).slice(0,40));S.f=(S.f||0)+1;if(S.f>=5){S.lock=Date.now()+30000;S.f=0}S.msg='Username atau password salah.';render();return}
- S.f=0;S.user=u;S.page='dashboard';S.cart={};try{history.replaceState(null,'',location.pathname+'#dashboard')}catch(e){}touch();saveSession();log('login',u.username);render()}
+ un=String(un).trim().toLowerCase();pw=String(pw);
+ let cl=null;
+ if(SB.hasCfg()){cl=await SB.login(un,pw);
+  if(cl.ok){const pr=cl.profile;let u=S.users.find(x=>x.id===pr.id);if(!u){u={id:pr.id,cloud:1};S.users.push(u)}
+   Object.assign(u,{name:pr.name,username:pr.username,role:pr.role,on:1,cloud:1});await setPw(u,pw);
+   S.cperm=S.cperm||{};S.cperm[pr.id]=cl.perms;S.myPerms=new Set(cl.perms);S.f=0;S.user=u;S.page='dashboard';S.cart={};
+   try{history.replaceState(null,'',location.pathname+'#dashboard')}catch(e){}touch();saveSession();log('login',u.username+' (supabase)');render();if(S.sbinit)SB.sync();else firstSync();return}
+  if(cl.code==='noprof'||cl.code==='off'){S.msg=cl.msg;render();return}}
+ const u=S.users.find(x=>x.username===un&&x.on&&x.ph);const ok=u&&(await hashPw(pw,u.salt))===u.ph;
+ if(!ok){log('login_gagal',un.slice(0,40));S.f=(S.f||0)+1;if(S.f>=5){S.lock=Date.now()+30000;S.f=0}S.msg=cl&&(cl.code==='net')&&!navigator.onLine?'Username atau password salah (mode offline memakai password login terakhir di perangkat ini).':'Username atau password salah.';render();return}
+ S.f=0;S.user=u;S.myPerms=null;S.page='dashboard';S.cart={};try{history.replaceState(null,'',location.pathname+'#dashboard')}catch(e){}touch();saveSession();log('login',u.username);render();if(u.cloud&&SB.hasCfg())S.msg=''}
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();window._ip=e;const i=document.querySelector('form[data-f=login] input[name=username]');if(!i||!i.value)render()});
 addEventListener('appinstalled',()=>{window._ip=null;render()});
 function installApp(){const e=window._ip;if(!e)return;e.prompt();e.userChoice.finally(()=>{window._ip=null;render()})}
 ['online','offline'].forEach(ev=>addEventListener(ev,()=>{const n=$('#net');if(n){n.textContent=navigator.onLine?'Online':'Offline';n.className='bd '+(navigator.onLine?'b-ok':'b-warn')}}));
 
-const eff=()=>S.rolePerms[S.user.role];
+const eff=()=>S.user.cloud?(S.myPerms||(S.myPerms=new Set((S.cperm||{})[S.user.id]||[]))):S.rolePerms[S.user.role];
 const can=p=>{const e=eff();return[].concat(p).some(x=>e.has(x))};
 const log=(a,d='')=>{S.log.unshift({t:T0+' '+hhmm(),u:S.user?S.user.username:'-',a,d});persist()};
 const toast=m=>{const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2600)};
@@ -100,7 +118,7 @@ P.dashboard=()=>{const r=S.user.role,u=S.user.id,soon=iso(addD(TODAY,+S.settings
 P.members=()=>{const c=can('member.contact');const f=S.filter,q=S.q.toLowerCase();
  const list=S.members.filter(m=>(!q||m.name.toLowerCase().includes(q)||m.code.toLowerCase().includes(q))&&(!f||mstat(m)[0]===f));
  return`${c?'':'<p class="mut">Akses terbatas: kontak (HP) disembunyikan untuk role Anda.</p>'}<div class="tb"><input id="q" placeholder="Cari nama / kode" value="${esc(S.q)}"><select data-ch="filter"><option value="">Semua status</option>${['Aktif','Akan Expired','Expired','Freeze'].map(x=>`<option${f===x?' selected':''}>${x}</option>`).join('')}</select>${can('member.create')?`<button class="btn ghost" data-a="go" data-v="register">${ico('plus')} Daftar baru</button>`:''}</div>
- <div class="card" id="mlist">${tbl(['Kode','Nama',...(c?['No. HP']:[]),'Paket','Berakhir','Status',''],list.map(m=>`<tr><td>${m.code}</td><td>${esc(m.name)}</td>${c?`<td>${m.phone}</td>`:''}<td>${PKG.find(p=>p.id===m.pkg).name}</td><td>${m.end}</td><td>${badge(mstat(m))}</td><td class="pill">${can('membership.freeze')?`<button class="btn sm ghost" data-a="freeze" data-v="${m.id}">${m.freeze?'Aktifkan':'Freeze'}</button>`:''}${can('member.delete')?`<button class="btn sm red" data-a="delmember" data-v="${m.id}">${S.confirmDel===m.id?'Yakin hapus?':'Hapus'}</button>`:''}</td></tr>`))}</div>`};
+ <div class="card" id="mlist">${tbl(['Kode','Nama',...(c?['No. HP']:[]),'Paket','Berakhir','Status',''],list.map(m=>`<tr><td>${m.code}</td><td>${esc(m.name)}</td>${c?`<td>${m.phone}</td>`:''}<td>${pkgName(m.pkg)}</td><td>${m.end}</td><td>${badge(mstat(m))}</td><td class="pill">${can('membership.freeze')?`<button class="btn sm ghost" data-a="freeze" data-v="${m.id}">${m.freeze?'Aktifkan':'Freeze'}</button>`:''}${can('member.delete')?`<button class="btn sm red" data-a="delmember" data-v="${m.id}">${S.confirmDel===m.id?'Yakin hapus?':'Hapus'}</button>`:''}</td></tr>`))}</div>`};
 P.register=()=>`<form class="card form" data-f="register"><label>Nama lengkap<input name="name" required></label><label>No. HP<input name="phone" inputmode="tel"></label><label>Paket<select name="pkg">${PKG.filter(p=>p.on).map(p=>`<option value="${p.id}">${p.name} - ${rp(p.price)}</option>`).join('')}</select></label><label>Pembayaran<select name="method"><option value="cash">Tunai</option><option value="noncash">Non-tunai</option></select></label><button class="btn">Daftarkan & Bayar</button></form>`;
 P.extend=()=>`<form class="card form" data-f="extend"><label>Member<select name="m">${S.members.map(m=>`<option value="${m.id}">${m.code} · ${esc(m.name)} (s/d ${m.end})</option>`).join('')}</select></label><label>Paket<select name="pkg">${PKG.filter(p=>p.on).map(p=>`<option value="${p.id}">${p.name} - ${rp(p.price)}</option>`).join('')}</select></label><button class="btn">Perpanjang & Bayar</button><p class="mut">Jika masih aktif, masa baru dihitung dari tanggal berakhir saat ini.</p></form>`;
 P.packages=()=>`<div class="card">${tbl(['Paket','Durasi','>Harga','Status',''],PKG.map(p=>`<tr><td>${p.name}</td><td>${p.days} hari</td><td class="r">${rp(p.price)}</td><td>${badge(p.on?['Aktif','b-ok']:['Nonaktif','b-gray'])}</td><td>${can('package.manage')?`<button class="btn sm ghost" data-a="pkgtoggle" data-v="${p.id}">${p.on?'Nonaktifkan':'Aktifkan'}</button>`:''}</td></tr>`))}</div>`;
@@ -129,7 +147,7 @@ P.permissions=()=>{const r=S.permRole,lock=r==='admin',on=S.rolePerms[r];let g='
  return`<div class="note">Centang atau hapus centang. Perubahan langsung berlaku untuk semua pengguna role tersebut.</div><div class="tb"><select data-ch="permrole">${Object.entries(ROLES).map(([k,v])=>`<option value="${k}"${k===r?' selected':''}>${v}</option>`).join('')}</select></div><div class="card"><h2>Role: ${ROLES[r]}${lock?' (akses penuh, terkunci)':''}</h2><div class="grid2">${[...new Set(CAT.map(c=>c[2]))].map(gr=>`<div><div class="mut" style="font-weight:600;margin:6px 0">${gr}</div>${CAT.filter(c=>c[2]===gr).map(c=>`<label class="pm"><input type="checkbox" data-perm="${c[0]}"${on.has(c[0])?' checked':''}${lock?' disabled':''}><span>${c[1]}<br><code>${c[0]}</code></span></label>`).join('')}</div>`).join('')}</div></div>`};
 const sform=(fields)=>`<form class="card form" data-f="settings">${fields.map(([k,l,t])=>`<label>${l}<input name="${k}" type="${t}" value="${esc(S.settings[k])}"></label>`).join('')}<button class="btn">Simpan</button></form>`;
 P.gym=()=>sform([['gym_name','Nama gym','text'],['gym_address','Alamat','text'],['gym_phone','Telepon','text']]);
-P.system=()=>sform([['session_timeout','Session timeout (menit tidak aktif)','number'],['expiring_days','Batas "akan expired" (hari)','number']])+`<div class="card"><h2>Sinkronisasi</h2><p>Mode: <b>lokal</b>. ${navigator.onLine?'Perangkat online.':'Perangkat offline.'} Semua data tersimpan di perangkat ini. Sinkron otomatis ke database online (Supabase) belum diaktifkan.</p></div><div class="card"><h2>Data</h2><p class="pill" style="flex-wrap:wrap"><button class="btn ghost" data-a="reseed">${S.c==='reseed'?'Yakin? Data diganti data contoh':'Muat data contoh'}</button><button class="btn red" data-a="wipe">${S.c==='wipe'?'Yakin hapus semua data?':'Kosongkan data (mulai dari nol)'}</button></p></div>`;
+P.system=()=>sform([['session_timeout','Session timeout (menit tidak aktif)','number'],['expiring_days','Batas "akan expired" (hari)','number']])+`<div class="card"><h2>Sinkronisasi</h2><p>Mode: <b>${cloudLive()?'tersinkron ke Supabase':'lokal'}</b>. ${navigator.onLine?'Perangkat online.':'Perangkat offline.'} Atur koneksi di menu <b>Koneksi Database</b>.</p></div><div class="card"><h2>Data</h2><p class="pill" style="flex-wrap:wrap"><button class="btn ghost" data-a="reseed">${S.c==='reseed'?'Yakin? Data diganti data contoh':'Muat data contoh'}</button><button class="btn red" data-a="wipe">${S.c==='wipe'?'Yakin hapus semua data?':'Kosongkan data (mulai dari nol)'}</button></p></div>`;
 P.backup=()=>`<div class="card form"><h2>Cadangkan data</h2><p>Unduh seluruh data (member, transaksi, user, pengaturan) sebagai file JSON dan simpan di tempat aman. File ini berisi hash password.</p><button class="btn" data-a="export">${ico('db')} Unduh Backup</button></div><div class="card form"><h2>Pulihkan dari file</h2><p class="mut">Mengganti semua data di perangkat ini dengan isi file backup.</p><input type="file" id="imp" accept="application/json"><button class="btn ghost" data-a="import">Pulihkan</button></div>`;
 P.activity=()=>`<div class="card">${tbl(['Waktu','User','Aksi','Detail'],S.log.slice(0,100).map(l=>`<tr><td>${l.t}</td><td>${l.u}</td><td>${l.a}</td><td>${esc(l.d)}</td></tr>`))}</div>`;
 P.security=()=>`<div class="note">Daftar halaman dan hasil akses untuk role Anda. Pembatasan dijalankan oleh aplikasi di perangkat ini. Penjagaan di sisi server tersedia di versi PHP dan akan ditambahkan saat sinkron online diaktifkan.</div><div class="card"><h2>Coba akses langsung</h2><div class="tb"><select id="direct">${MENU.filter(m=>m[0]!=='security').map(m=>`<option value="${m[0]}">${m[0]}.php</option>`).join('')}</select><button class="btn" data-a="direct">Buka alamat ini</button></div></div><div class="card"><h2>Hak akses role ${ROLES[S.user.role]}</h2>${tbl(['Halaman','Hasil'],MENU.filter(m=>m[0]!=='security').map(m=>`<tr><td>${m[0]}.php</td><td>${!m[2]||can(m[2])?badge(['200 Dibuka','b-ok']):badge(['403 Ditolak','b-err'])}</td></tr>`))}</div>`;
@@ -150,23 +168,24 @@ function renderView(){
 function go(k){S.page=k;S.drawer=false;try{location.hash=k}catch(e){}render();scrollTo(0,0)}
 function modal(h){$('#modal').innerHTML=h?`<div class="ov" data-a="mclose"><div class="modal">${h}</div></div>`:''}
 function receipt(t){modal(`<div class="rc"><div style="text-align:center"><b>${esc(S.settings.gym_name)}</b><br>${esc(S.settings.gym_address)}<br>${esc(S.settings.gym_phone)}</div><hr><div class="row"><span>${t.inv}</span><span>${t.date} ${t.time}</span></div><div>Kasir: ${byName(t.by)}</div><hr>${t.items.map(i=>`<div>${esc(i.name)}</div><div class="row"><span>${i.qty} x ${i.price.toLocaleString('id-ID')}</span><span>${(i.qty*i.price).toLocaleString('id-ID')}</span></div>`).join('')}<hr><div class="row"><b>TOTAL</b><b>${rp(t.total)}</b></div><div class="row"><span>Metode</span><span>${t.method==='cash'?'Tunai':'Non-tunai'}</span></div>${t.voided?'<div style="text-align:center;color:var(--err)"><b>*** DIBATALKAN ***</b></div>':''}<hr><div style="text-align:center">Terima kasih</div></div><p style="text-align:right;margin:12px 0 0"><button class="btn ghost" data-a="mclose">Tutup</button></p>`)}
-function addTx(type,by,method,total,items){const d={id:++S.seq,inv:'INV'+T0.replace(/-/g,'').slice(2)+String(S.seq).padStart(4,'0'),date:T0,time:hhmm(),type,by,method,total,items};S.tx.push(d);return d}
-function newMember(name,phone,pkg,method){const id=Math.max(0,...S.members.map(x=>x.id))+1;const p=PKG.find(x=>x.id==pkg);S.members.push({id,code:'GYM'+String(id).padStart(4,'0'),name,phone,pkg:+pkg,end:iso(addD(TODAY,p.days)),freeze:false,joined:T0});return addTx('membership',S.user.id,method,p.price,[{name:'Membership '+p.name,qty:1,price:p.price,cost:0}])}
+function addTx(type,by,method,total,items,extra){const d={id:uid(),inv:'INV'+T0.replace(/-/g,'').slice(2)+String(++S.seq).padStart(4,'0')+'-'+S.dev,date:T0,time:hhmm(),type,by,method,total,items,...(extra||{})};S.tx.push(d);return d}
+function newMember(name,phone,pkg,method){const id=uid(),num=Math.max(0,...S.members.map(x=>+String(x.code).replace(/\D/g,'')||0))+1;const p=PKG.find(x=>x.id==pkg);S.members.push({id,code:'GYM'+String(num).padStart(4,'0'),name,phone,pkg:p.id,end:iso(addD(TODAY,p.days)),freeze:false,joined:T0});return addTx('membership',S.user.id,method,p.price,[{name:'Membership '+p.name,qty:1,price:p.price,cost:0}],{mid:id,pk:p.id})}
 
 /* ---------- events ---------- */
 document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)return;const a=el.dataset.a,v=el.dataset.v;
+ if(extraClick(a,v,el,e))return;
  if(a==='install')installApp();
- else if(a==='logout'){log('logout');S.user=null;S.cart={};saveSession();try{history.replaceState(null,'',location.pathname)}catch(e){}render()}
+ else if(a==='logout'){log('logout');S.user=null;S.myPerms=null;SB.logout();S.cart={};saveSession();try{history.replaceState(null,'',location.pathname)}catch(e){}render()}
  else if(a==='go')go(v);
  else if(a==='drawer'){S.drawer=!S.drawer;render()}
  else if(a==='mclose'){if(el.classList.contains('ov')&&e.target!==el)return;modal('')}
  else if(a==='freeze'){const m=S.members.find(x=>x.id==v);if(!can('membership.freeze'))return;m.freeze=!m.freeze;log('member_freeze',m.code);render()}
- else if(a==='delmember'){if(!can('member.delete'))return;if(S.confirmDel==v){S.members.splice(S.members.findIndex(x=>x.id==v),1);S.confirmDel=0;log('member_hapus','#'+v);toast('Member dihapus.')}else S.confirmDel=+v;render()}
+ else if(a==='delmember'){if(!can('member.delete'))return;if(S.confirmDel==v){S.members.splice(S.members.findIndex(x=>x.id==v),1);S.confirmDel=0;log('member_hapus','#'+v);toast('Member dihapus.')}else S.confirmDel=v;render()}
  else if(a==='pkgtoggle'){if(!can('package.manage'))return;const p=PKG.find(x=>x.id==v);p.on=p.on?0:1;render()}
  else if(a==='pay'){if(!can('pos.checkout'))return;if(!S.shift){toast('Buka shift terlebih dahulu.');return}
   const items=S.products.filter(p=>S.cart[p.id]>0).map(p=>({p,q:S.cart[p.id]}));if(!items.length){toast('Pilih minimal satu produk.');return}
   if(items.some(i=>i.q>i.p.stock)){toast('Stok tidak cukup.');return}
-  items.forEach(i=>i.p.stock-=i.q);const t=addTx('pos',S.user.id,$('#pm').value,items.reduce((s,i)=>s+i.p.price*i.q,0),items.map(i=>({name:i.p.name,qty:i.q,price:i.p.price,cost:i.p.cost})));S.cart={};log('pos_checkout',t.inv);render();receipt(t)}
+  items.forEach(i=>i.p.stock-=i.q);const t=addTx('pos',S.user.id,$('#pm').value,items.reduce((s,i)=>s+i.p.price*i.q,0),items.map(i=>({name:i.p.name,qty:i.q,price:i.p.price,cost:i.p.cost,pid:i.p.id})));S.cart={};log('pos_checkout',t.inv);render();receipt(t)}
  else if(a==='saveprod'){if(!can('product.manage'))return;const p=S.products.find(x=>x.id==v);document.querySelectorAll(`[data-pf][data-id="${v}"]`).forEach(i=>p[i.dataset.pf]=+i.value);log('produk_ubah',p.name);toast('Produk disimpan.')}
  else if(a==='receipt'){const t=S.tx.find(x=>x.id==v);if(t){log('cetak_ulang',t.inv);receipt(t)}}
  else if(a==='void'){if(!can('pos.cancel'))return;const t=S.tx.find(x=>x.id==v);t.voided=true;log('transaksi_batal',t.inv);render();toast('Transaksi dibatalkan.')}
@@ -176,36 +195,37 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!
  else if(a==='usertoggle'){if(!can('user.manage'))return;const u=S.users.find(x=>x.id===v);u.on=u.on?0:1;render()}
  else if(a==='resetpw'){if(!can('user.manage'))return;const inp=document.querySelector(`[data-pw="${v}"]`);if(!inp||inp.value.length<6){toast('Password minimal 6 karakter.');return}const u=S.users.find(x=>x.id===v);setPw(u,inp.value).then(()=>{log('user_reset_password',u.username);render();toast('Password diperbarui.')})}
  else if(a==='export'){if(!can('backup.manage'))return;const bl=new Blob([JSON.stringify(snap(),null,1)],{type:'application/json'});const l=document.createElement('a');l.href=URL.createObjectURL(bl);l.download='pinagym-backup-'+T0+'.json';document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(l.href),3000);log('backup_unduh')}
- else if(a==='import'){if(!can('backup.manage'))return;const f=$('#imp').files[0];if(!f){toast('Pilih file backup dahulu.');return}f.text().then(t=>{const d=JSON.parse(t);if(!d||!Array.isArray(d.users)||!Array.isArray(d.members))throw 0;hydrate(d);S.user=S.users.find(u=>u.id===S.user.id&&u.on)||null;saveSession();log('backup_pulihkan');render();toast('Data dipulihkan.')}).catch(()=>toast('File backup tidak valid.'))}
- else if(a==='reseed'||a==='wipe'){if(!can('settings.manage'))return;if(S.c!==a){S.c=a;render();return}S.c='';if(a==='reseed')seedData();else{S.members=[];S.tx=[];S.checkins=[];S.products=[]}log(a==='reseed'?'data_contoh_dimuat':'data_dikosongkan');render();toast(a==='reseed'?'Data contoh dimuat.':'Data dikosongkan.')}
+ else if(a==='import'){if(!can('backup.manage'))return;if(cloudLive()){toast('Pulihkan backup hanya untuk mode lokal. Putuskan koneksi Supabase dahulu.');return}const f=$('#imp').files[0];if(!f){toast('Pilih file backup dahulu.');return}f.text().then(t=>{const d=JSON.parse(t);if(!d||!Array.isArray(d.users)||!Array.isArray(d.members))throw 0;hydrate(d);S.user=S.users.find(u=>u.id===S.user.id&&u.on)||null;saveSession();log('backup_pulihkan');render();toast('Data dipulihkan.')}).catch(()=>toast('File backup tidak valid.'))}
+ else if(a==='reseed'||a==='wipe'){if(!can('settings.manage'))return;if(cloudLive()){toast('Tidak tersedia saat terhubung ke Supabase (akan menghapus data server).');return}if(S.c!==a){S.c=a;render();return}S.c='';if(a==='reseed')seedData();else{S.members=[];S.tx=[];S.checkins=[];S.products=[]}log(a==='reseed'?'data_contoh_dimuat':'data_dikosongkan');render();toast(a==='reseed'?'Data contoh dimuat.':'Data dikosongkan.')}
  else if(a==='direct'){S.page=$('#direct').value;try{location.hash=S.page}catch(e){}render()}
 });
 document.addEventListener('change',e=>{const el=e.target;
  if(el.dataset.ch==='role'){S.user=S.users.find(u=>u.role===el.value);S.page='dashboard';S.cart={};log('ganti_role_demo',el.value);render()}
  else if(el.dataset.ch==='filter'){S.filter=el.value;render()}
- else if(el.dataset.ch==='watpl'){S.wa.t=+el.value;render()}
+ else if(el.dataset.ch==='watpl'){S.wa.t=el.value;render()}
  else if(el.dataset.ch==='wag'){S.wa.g=el.value;render()}
  else if(el.dataset.ch==='permrole'){S.permRole=el.value;render()}
- else if(el.dataset.perm){if(S.permRole==='admin')return;const s=S.rolePerms[S.permRole];el.checked?s.add(el.dataset.perm):s.delete(el.dataset.perm);log('permission_role_ubah',S.permRole+' '+el.dataset.perm+(el.checked?' +':' -'));toast('Hak akses disimpan.')}
+ else if(el.dataset.perm){if(S.permRole==='admin')return;const s=S.rolePerms[S.permRole];if(cloudLive()){const pm=el.dataset.perm,rl=S.permRole,on=el.checked;(on?SB.req('/rest/v1/role_permissions?on_conflict=role,perm',{method:'POST',body:{role:rl,perm:pm},prefer:'resolution=merge-duplicates,return=minimal'}):SB.req('/rest/v1/role_permissions?role=eq.'+rl+'&perm=eq.'+encodeURIComponent(pm),{method:'DELETE',prefer:'return=minimal'})).then(r=>{if(r.ok){on?s.add(pm):s.delete(pm);toast('Hak akses disimpan di Supabase.')}else{el.checked=!on;toast(r.err.message)}});return}el.checked?s.add(el.dataset.perm):s.delete(el.dataset.perm);log('permission_role_ubah',S.permRole+' '+el.dataset.perm+(el.checked?' +':' -'));toast('Hak akses disimpan.')}
 });
 document.addEventListener('input',e=>{const el=e.target;
  if(el.classList.contains('qty')){S.cart[el.dataset.id]=Math.max(0,+el.value||0);$('#posTotal').textContent=rp(cartTotal())}
  else if(el.id==='q'){S.q=el.value;const pos=el.selectionStart;render();const n=$('#q');n.focus();n.setSelectionRange(pos,pos)}
 });
 document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,k=f.dataset.f,d=Object.fromEntries(new FormData(f));
+ if(extraSubmit(k,d,f))return;
  if(k==='login')doLogin(d.username,d.password);
- else if(k==='register'){if(!can('member.create'))return;const t=newMember(d.name,d.phone,d.pkg,d.method);log('member_daftar',d.name);render();toast('Member didaftarkan.');receipt(t);
-   $('#modal .modal p').insertAdjacentHTML('afterbegin',can('whatsapp.send')?'<button class="btn ghost" data-a="mclose" id="waGo" style="margin-right:6px">Kirim WA Selamat Datang</button>':'');const b=$('#waGo');if(b)b.addEventListener('click',()=>{S.wa={t:2,g:'new'};go('whatsapp')})}
- else if(k==='extend'){if(!can('member.extend'))return;const m=S.members.find(x=>x.id==d.m),p=PKG.find(x=>x.id==d.pkg);const base=m.end>T0?m.end:T0;m.end=iso(addD(new Date(base+'T00:00:00'),p.days));m.freeze=false;addTx('membership',S.user.id,'cash',p.price,[{name:'Perpanjangan '+p.name,qty:1,price:p.price,cost:0}]);log('member_perpanjang',m.code);render();toast(m.name+' diperpanjang sampai '+m.end)}
+ else if(k==='register'){if(!can('member.create'))return;const t=newMember(d.name,d.phone,d.pkg,d.method);log('member_daftar',d.name);render();toast('Member didaftarkan.');receipt(t);afterReg(t.mid)}
+ else if(k==='extend'){if(!can('member.extend'))return;const m=S.members.find(x=>x.id==d.m),p=PKG.find(x=>x.id==d.pkg);const base=m.end>T0?m.end:T0;m.end=iso(addD(new Date(base+'T00:00:00'),p.days));m.freeze=false;addTx('membership',S.user.id,'cash',p.price,[{name:'Perpanjangan '+p.name,qty:1,price:p.price,cost:0}],{mid:m.id,pk:p.id});log('member_perpanjang',m.code);render();toast(m.name+' diperpanjang sampai '+m.end)}
  else if(k==='checkin'){const m=S.members.find(x=>x.code===d.code.trim().toUpperCase());const r=$('#ciRes');let ok=false,msg;
-  if(!m)msg='Kode '+esc(d.code)+' tidak ditemukan.';else{const s=mstat(m)[0];if(s==='Freeze')msg=esc(m.name)+': membership sedang di-freeze.';else if(s==='Expired')msg=esc(m.name)+': membership expired sejak '+m.end+'.';else if(S.checkins.some(c=>c.date===T0&&c.m===m.id))msg=esc(m.name)+' sudah check-in hari ini.';else{ok=true;S.checkins.push({date:T0,time:hhmm(),m:m.id});log('checkin',m.code);msg='Check-in berhasil: <b>'+esc(m.name)+'</b>'}}
+  if(!m)msg='Kode '+esc(d.code)+' tidak ditemukan.';else{const s=mstat(m)[0];if(s==='Freeze')msg=esc(m.name)+': membership sedang di-freeze.';else if(s==='Expired')msg=esc(m.name)+': membership expired sejak '+m.end+'.';else if(S.checkins.some(c=>c.date===T0&&c.m===m.id))msg=esc(m.name)+' sudah check-in hari ini.';else{ok=true;S.checkins.push({id:uid(),date:T0,time:hhmm(),m:m.id});log('checkin',m.code);msg='Check-in berhasil: <b>'+esc(m.name)+'</b>'}}
   r.innerHTML=`<div class="note" style="${ok?'background:var(--ok-bg);color:var(--ok)':'background:var(--err-bg);color:var(--err)'}">${msg}</div>`}
  else if(k==='adduser'){if(!can('user.manage'))return;const un=String(d.username).trim();if(!/^[A-Za-z0-9_.-]{3,30}$/.test(un)){toast('Username 3-30 karakter (huruf, angka, . _ -).');return}if(S.users.some(x=>x.username===un)){toast('Username sudah dipakai.');return}if(!ROLES[d.role]||String(d.password).length<6){toast('Role atau password tidak valid.');return}const u={id:un,name:String(d.name).trim(),username:un,role:d.role,on:1};setPw(u,String(d.password)).then(()=>{S.users.push(u);log('user_tambah',un);render();toast('User ditambahkan.')})}
  else if(k==='settings'){Object.keys(d).forEach(x=>S.settings[x]=isNaN(d[x])||d[x]===''?d[x]:+d[x]);log('ubah_pengaturan');toast('Pengaturan disimpan.')}
 });
 addEventListener('hashchange',()=>{const k=(location.hash||'').slice(1);if(S.user&&MENU.some(m=>m[0]===k)&&k!==S.page){S.page=k;render()}});
-(async()=>{let d=null;try{d=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
+addEventListener('DOMContentLoaded',()=>(async()=>{let d=null;try{d=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
  if(d&&Array.isArray(d.users))hydrate(d);else{seedData();await seedUsers();persist()}
  restoreSession();render();startIdle();
  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
-})();
+ if(SB.live()&&S.user&&S.user.cloud)SB.sync();
+})());

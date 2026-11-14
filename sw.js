@@ -1,7 +1,7 @@
 /* PinaGym service worker: cache-first untuk berkas aplikasi, jadi bisa dibuka tanpa internet.
    Naikkan VERSION setiap kali berkas aplikasi berubah agar pengguna mendapat versi baru. */
-const VERSION = 'pinagym-v1';
-const SHELL = ['./', 'index.html', 'app.css', 'app.js', 'manifest.webmanifest',
+const VERSION = 'pinagym-v2';
+const SHELL = ['./', 'index.html', 'app.css', 'qr.js', 'card.js', 'sync.js', 'app.js', 'ui.js', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png', 'icons/favicon.svg'];
 
 self.addEventListener('install', e => {
