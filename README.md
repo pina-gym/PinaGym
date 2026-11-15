@@ -12,6 +12,10 @@ Aplikasi manajemen gym dengan dashboard dan menu yang berbeda untuk tiap role (A
 - WhatsApp: template pesan dan **antrean otomatis**: sambutan member baru, pengingat sebelum membership habis (default H-7, H-3, H-1, H-0, bisa diatur), dan pesan setelah habis. Tiap pesan hanya muncul sekali. Pesan dikirim dengan satu ketukan lewat WhatsApp di perangkat Anda.
 - **Backup Database**: koneksi Supabase ada di menu ini. Backup otomatis harian seluruh isi aplikasi, daftar backup, pulihkan, hapus, plus backup/pulihkan lewat file (lihat `supabase/README.md`).
 - Tabel otomatis menjadi kartu di HP/tablet; edit dan hapus lewat pop-up konfirmasi; pilih banyak lalu hapus.
+- **QR check-in di latar belakang** (kasir/admin, semua menu): scanner USB/Bluetooth (mode keyboard), scanner serial, atau kamera. Pop-up: masuk, freeze, tidak aktif, hampir habis, plus tombol tambah produk ke POS.
+- **Cetak struk** ke printer Bluetooth/USB/Serial (ESC/POS) atau browser, kertas 57/58/80 mm, default di Pengaturan.
+- **Trainer**: pendaftaran, sesi (diatur admin), gaji trainer (pokok + persen) dan kasir (pokok), slip cetak/PDF/WhatsApp.
+- **Export Excel** riwayat transaksi harian/mingguan/bulanan/rentang bebas.
 - Laporan, dashboard TV, activity log, pengaturan, backup dan pulihkan data (JSON).
 - Login dengan password ter-hash (PBKDF2), session timeout yang dapat diatur, batas percobaan login.
 
@@ -36,7 +40,7 @@ python3 -m http.server 8080
 Service worker dan hash password butuh `https://` atau `localhost`.
 
 ## Struktur
-- `index.html`, `app.css`, `app.js`, `ui.js`: aplikasi; `sync.js`: backup Supabase; `ext.js`: konfirmasi, pilih banyak, backup; `card.js`, `qr.js`: kartu member (QR dan PDF)
+- `index.html`, `app.css`, `app.js`, `ui.js`: aplikasi; `sync.js`: backup Supabase; `ext.js`: konfirmasi, pilih banyak, backup; `card.js`, `qr.js`: kartu member; `scan.js`: scanner; `print.js`: printer struk; `pay.js`: trainer dan gaji; `xlsx.js`: export Excel
 - `manifest.webmanifest`, `sw.js`, `icons/`: PWA dan mode offline
 - `supabase/`: `backup.sql` (tabel backup) dan panduan; `legacy-schema.sql` = skema sinkron lama (tidak dipakai lagi)
 - `php/`: versi PHP + SQLite untuk XAMPP (validasi izin di server). Lihat `php/README.md`.
@@ -47,5 +51,5 @@ User dan role disimpan lokal di perangkat dan dibatasi oleh aplikasi itu sendiri
 ## WhatsApp: batasan
 Aplikasi membuka WhatsApp dengan nomor dan pesan sudah terisi, lalu Anda menekan kirim. Pengiriman tanpa disentuh sama sekali (otomatis di latar belakang) memerlukan layanan gateway WhatsApp berbayar atau WhatsApp Business API, dan belum dipasang. PDF kartu terlampir otomatis hanya pada ponsel (lembar bagikan). Di komputer, PDF diunduh lalu dilampirkan manual.
 
-## Rencana
-- Fitur Personal Trainer (dihapus sementara).
+## Batasan perangkat
+Printer, scanner, dan kamera memakai Web Bluetooth/WebUSB/Web Serial dan BarcodeDetector: berjalan di Chrome/Edge (Android dan komputer), tidak di iPhone/iPad. Backup otomatis hanya berjalan saat aplikasi terbuka dan online.
