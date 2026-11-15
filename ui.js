@@ -76,9 +76,12 @@ P.whatsapp=()=>{const t=S.tpl.find(x=>x.id==S.wa.t)||S.tpl[0]||{id:'',name:'',bo
 /* ---------- aksi klik ---------- */
 function showCard(id){const m=S.members.find(x=>x.id===id);if(!m)return;S.cardM=id;
  modal(`<div style="max-width:420px;margin:auto">${Card.svg(m,{gym:S.settings.gym_name,pkg:pkgName(m.pkg),end:m.end})}</div><p class="mut" style="margin:10px 0">QR berisi kode <b>${esc(m.code)}</b> untuk check-in. Ukuran cetak 85,6 × 54 mm (kartu ATM).</p><div class="pill" style="flex-wrap:wrap;justify-content:flex-end"><button class="btn ghost" data-a="cardprint">${ico('print')} Cetak</button><button class="btn ghost" data-a="cardpdf">Unduh PDF</button>${canCW()&&m.phone?`<button class="btn" data-a="cardwa">${ico('chat')} Kirim PDF ke WhatsApp</button>`:''}<button class="btn ghost" data-a="mclose">Tutup</button></div>`)}
+const welcomeTxt=m=>fillTpl(tplBy('Selamat Datang').body,m)+'\n\nKartu member Anda terlampir (kode '+m.code+'). Tunjukkan QR saat check-in.';
+function waFlow(m){modal(`<div style="max-width:440px;margin:auto"><h2 style="margin:0 0 6px">Kirim kartu + sambutan</h2><p class="mut" style="margin:0 0 10px">${esc(m.name)} (${m.code}). WhatsApp tidak mengizinkan teks dan berkas dikirim sekaligus oleh aplikasi, jadi kirim dua langkah berikut. Tiap langkah cukup satu ketukan.</p><div class="note" style="white-space:pre-wrap;max-height:160px;overflow:auto">${esc(welcomeTxt(m))}</div><div class="form"><button class="btn" data-a="cwtext" data-v="${m.id}">${ico('chat')} 1. Kirim ucapan selamat datang</button><button class="btn" data-a="cwfile" data-v="${m.id}">${ico('card')} 2. Kirim PDF kartu member</button></div><p style="text-align:right;margin:12px 0 0"><button class="btn ghost" data-a="mclose">Tutup</button></p></div>`)}
 const cardOpt=m=>({gym:S.settings.gym_name,pkg:pkgName(m.pkg),end:m.end});
+const m0=id=>S.members.find(x=>x.id===id);
 function afterReg(mid){const b=document.querySelector('#modal .modal p');if(!b)return;
- b.insertAdjacentHTML('afterbegin',`<button class="btn ghost" data-a="mcard" data-v="${mid}" style="margin-right:6px">Kartu Member</button>${canWa()?`<button class="btn" data-a="wawelcome" data-v="${mid}" style="margin-right:6px">${ico('chat')} Kirim WA Selamat Datang</button>`:''}`)}
+ b.insertAdjacentHTML('afterbegin',`<button class="btn ghost" data-a="mcard" data-v="${mid}" style="margin-right:6px">Kartu Member</button>${canCW()&&m0(mid)&&!isDaily(m0(mid).pkg)?`<button class="btn" data-a="cwfile" data-v="${mid}" style="margin-right:6px">${ico('card')} Kirim PDF Kartu</button>`:''}${canWa()?`<button class="btn" data-a="wawelcome" data-v="${mid}" style="margin-right:6px">${ico('chat')} Kirim WA Selamat Datang</button>`:''}`)}
 
 
 function extraClick(a,v,el){
@@ -86,9 +89,10 @@ function extraClick(a,v,el){
  if(a==='mcard'){if(can('member.view'))showCard(v);return true}
  if(a==='cardprint'){const m=S.members.find(x=>x.id===S.cardM);if(m)Card.print(m,cardOpt(m));return true}
  if(a==='cardpdf'){const m=S.members.find(x=>x.id===S.cardM);if(m){Card.download(Card.pdf(m,cardOpt(m)),'Kartu-'+m.code+'.pdf');log('kartu_pdf',m.code)}return true}
- if(a==='cardwa'){const m=S.members.find(x=>x.id===S.cardM);if(!m||!canCW())return true;
-  const txt=fillTpl(tplBy('Selamat Datang').body,m)+'\n\nKartu member Anda terlampir (kode '+m.code+'). Tunjukkan QR saat check-in.';
-  Card.share(m,cardOpt(m),txt,'https://wa.me/'+waNum(m.phone)+'?text='+encodeURIComponent(txt)).then(r=>{log('kartu_wa',m.code);if(r==='download')toast('PDF diunduh. Lampirkan ke chat WhatsApp yang terbuka.');});return true}
+ if(a==='cardwa'){const m=S.members.find(x=>x.id===S.cardM);if(!m||!canCW())return true;waFlow(m);return true}
+ if(a==='cwtext'){const m=S.members.find(x=>x.id===v);if(m&&canCW()&&m.phone){openWa('https://wa.me/'+waNum(m.phone)+'?text='+encodeURIComponent(welcomeTxt(m)));log('wa_sambutan',m.code)}return true}
+ if(a==='cwfile'){const m=S.members.find(x=>x.id===v);if(!m||!canCW())return true;const t=welcomeTxt(m);copyText(t);
+  Card.share(m,cardOpt(m),t,null).then(r=>{log('kartu_wa',m.code);toast(r==='download'?'PDF kartu diunduh. Lampirkan ke chat WhatsApp member.':'Teks sambutan juga disalin: tempel sebagai keterangan bila belum muncul.')});return true}
  if(a==='wasend'){const m=S.members.find(x=>x.id===v),t=S.tpl.find(x=>x.id===D.t)||S.tpl[0];if(!m||!canWa()||!t)return true;
   if(!openWa(waLink(m,t.body)))toast('Nomor HP member kosong.');else log('wa_kirim',m.code);return true}
  if(a==='wawelcome'){const m=S.members.find(x=>x.id===v);if(!m||!canWa())return true;
@@ -245,8 +249,7 @@ function autoSend(m){
  if(!autoOn()||!canCW()||!m||!m.phone)return false;
  const tp=tplBy('Selamat Datang');markSent('w|'+m.id,m.id);log('wa_otomatis',m.code);
  if(!isDaily(m.pkg)){
-  const txt=fillTpl(tp.body,m)+'\n\nKartu member Anda terlampir (kode '+m.code+').';
-  Card.share(m,cardOpt(m),txt,'https://wa.me/'+waNum(m.phone)+'?text='+encodeURIComponent(txt)).then(r=>{if(r==='download')toast('PDF kartu diunduh. Lampirkan ke chat WhatsApp yang terbuka.')})}
+  openWa('https://wa.me/'+waNum(m.phone)+'?text='+encodeURIComponent(welcomeTxt(m)));toast('Ucapan dibuka di WhatsApp. Setelah terkirim, kembali ke sini dan ketuk Kirim PDF Kartu.')}
  else openWa(waLink(m,tp.body));
  return true}
 
