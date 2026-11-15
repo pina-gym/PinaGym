@@ -137,3 +137,28 @@ th.ck,td.ck{width:36px}.ck input{width:20px;height:20px;min-height:0;accent-colo
 @media print{#printrc{display:block!important;color:#000;background:#fff}#printrc pre{margin:0;padding:1.5mm 2mm;font:11px/1.25 'Courier New',monospace;white-space:pre}}
 #upd{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;align-items:center;gap:10px;background:var(--ink);color:var(--surface);padding:10px 14px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.3);max-width:calc(100vw - 24px)}
 #upd .btn.ghost{background:transparent;color:inherit;border:1px solid currentColor}
+.trsel[hidden]{display:none!important}.chk{display:flex;gap:8px;align-items:center}.chk input{width:20px;height:20px}
+#camp{touch-action:none;cursor:grab;user-select:none}#camp:active{cursor:grabbing}
+#camp .ci-m{position:absolute;top:0;left:0;color:#fff;background:#0008;min-width:28px;min-height:28px}
+#camp.min{width:48px!important;height:48px;border-radius:50%;box-shadow:0 0 0 3px #22c55e,0 4px 14px rgba(0,0,0,.4)}
+#camp.min video{width:48px;height:48px;aspect-ratio:1;object-fit:cover}
+#camp.min .ci-x,#camp.min .ci-m,#camp.min small{display:none}
+/* POS sekali ketuk */
+.ptb{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}.ptb input{flex:1;min-width:160px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}.seg button{border:0;background:var(--surface);color:var(--mut);padding:9px 14px;font:inherit;cursor:pointer}.seg button.on{background:var(--brand);color:var(--brand-ink)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.tile{position:relative;text-align:left;display:flex;flex-direction:column;gap:2px;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;color:var(--ink);font:inherit;cursor:pointer;min-height:92px}
+.tile:active{transform:scale(.97)}.tile.on{border-color:var(--brand);background:var(--brand-soft)}.tile:disabled{opacity:.45;cursor:not-allowed}
+.tile .pr{color:var(--brand-d);font-weight:700}.tile small{color:var(--mut)}.tile .tg{color:var(--brand-d);font-weight:700;text-transform:uppercase;font-size:10px}
+.tile .qb{position:absolute;top:6px;right:6px;min-width:24px;height:24px;border-radius:12px;background:var(--brand);color:var(--brand-ink);font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 6px}
+.cl{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line)}.cl:last-child{border-bottom:0}.cl .st{display:inline-flex;align-items:center;gap:10px}
+.padgap{height:84px}
+.paybar{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:20;display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--brand);border-radius:16px;padding:10px 12px 10px 16px;box-shadow:0 8px 28px rgba(0,0,0,.28);max-width:calc(100vw - 32px)}
+.paybar b#posTotal{font:700 20px var(--f-head)}.paybar select{width:auto}.paybar .btn{padding:12px 22px;font-size:16px}
+@media(max-width:640px){.paybar{left:12px;right:12px;bottom:calc(64px + env(safe-area-inset-bottom,0px));max-width:none;justify-content:space-between}.paybar>div{flex:1}.tiles{grid-template-columns:1fr 1fr;gap:8px}.ptb .seg{width:100%}.ptb .seg button{flex:1}.padgap{height:150px}}
+/* logo gym */
+.lgprev{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;display:inline-block;margin-bottom:10px}.lgprev img{display:block;max-width:180px;max-height:120px}
+.blg{width:34px;height:34px;object-fit:contain;background:#fff;border-radius:8px;padding:2px;vertical-align:middle;margin-right:8px;flex:none}
+.rclg{max-width:120px;max-height:64px;object-fit:contain}.dlg{display:block;margin:0 auto 6px;max-width:40mm;max-height:22mm;object-fit:contain}
+.tvlg{height:1em;vertical-align:-.12em;margin-right:12px;background:#fff;border-radius:8px;padding:2px}
+@media print{#printrc.doc .dlg{margin:0 0 8px;max-width:60mm;max-height:26mm}}

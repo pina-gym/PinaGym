@@ -13,8 +13,9 @@ function checkinCode(raw){
  if(s==='Expired')return{st:'expired',m,left:daysLeft(m)};
  const soon=s==='Akan Expired',left=daysLeft(m),ci=S.checkins.find(c=>c.date===T0&&c.m===m.id);
  if(ci)return{st:'dup',m,soon,left,time:ci.time};
- S.checkins.push({id:uid(),date:T0,time:hhmm(),m:m.id});log('checkin',m.code);persist();
- return{st:'in',m,soon,left}}
+ S.checkins.push({id:uid(),date:T0,time:hhmm(),m:m.id});log('checkin',m.code);
+ const tr=typeof ptSession==='function'?ptSession(m):null;persist();
+ return{st:'in',m,soon,left,tr}}
 
 /* ---- bunyi ---- */
 let AC=null;
@@ -30,6 +31,7 @@ function showCI(r){
  const m=r.m;let b='';
  if(m)b=`<div class="ci-n">${esc(m.name)}</div><div class="mut">${esc(m.code)} · ${esc(pkgName(m.pkg))}</div><div>Berlaku s/d <b>${m.end}</b>${r.st==='expired'?` <span class="mut">(sudah berakhir ${-r.left} hari)</span>`:r.left>=0&&r.st!=='freeze'?` <span class="mut">(${r.left===0?'berakhir hari ini':r.left+' hari lagi'})</span>`:''}</div>`;
  else b=`<div class="ci-n">${esc(r.code||'')}</div><div class="mut">Tidak ada member dengan kode ini.</div>`;
+ if(r.tr)b+=`<div>Trainer: <b>${esc(r.tr.t.name)}</b> · sesi ke-${r.tr.used}${r.tr.max?' dari '+r.tr.max:''}</div>`+(r.tr.max&&r.tr.used>r.tr.max?'<div class="ci-w">Kuota sesi trainer sudah habis. Tawarkan perpanjangan paket.</div>':'');
  if(r.st==='dup')b+=`<div class="mut">Check-in pertama hari ini pukul ${r.time}.</div>`;
  if(r.soon)b+=`<div class="ci-w">Masa aktif tinggal ${r.left} hari. Tawarkan perpanjangan.</div>`;
  const posOk=can('pos.access'),btn=[];
@@ -88,6 +90,16 @@ async function serAuto(){try{if('serial'in navigator){const ps=await navigator.s
 /* ---- kamera ---- */
 const cam={on:false,stream:null,timer:0,det:null,canvas:null,err:''};
 async function loadJsQR(){if(window.jsQR)return true;return new Promise(r=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';s.onload=()=>r(!!window.jsQR);s.onerror=()=>r(false);document.head.appendChild(s)})}
+/* jendela kamera: bisa digeser ke mana saja dan dikecilkan; posisi diingat */
+function campInit(box){const K='pinagym.camp';let st={};try{st=JSON.parse(localStorage.getItem(K)||'{}')}catch(e){}
+ const save=()=>{try{localStorage.setItem(K,JSON.stringify(st))}catch(e){}};
+ const place=()=>{box.classList.toggle('min',!!st.min);if(st.x!=null){const x=Math.min(Math.max(0,st.x),Math.max(0,innerWidth-box.offsetWidth)),y=Math.min(Math.max(0,st.y),Math.max(0,innerHeight-box.offsetHeight));box.style.left=x+'px';box.style.top=y+'px';box.style.right='auto';box.style.bottom='auto'}};
+ box.querySelector('.ci-m').onclick=e=>{e.stopPropagation();st.min=true;save();place()};
+ let d=null;
+ box.addEventListener('pointerdown',e=>{if(e.target.closest('.ci-x')||(e.target.closest('.ci-m')&&!box.classList.contains('min')))return;const r=box.getBoundingClientRect();d={dx:e.clientX-r.left,dy:e.clientY-r.top,sx:e.clientX,sy:e.clientY,moved:false};try{box.setPointerCapture(e.pointerId)}catch(x){}});
+ box.addEventListener('pointermove',e=>{if(!d)return;if(Math.abs(e.clientX-d.sx)+Math.abs(e.clientY-d.sy)>5)d.moved=true;if(!d.moved)return;st.x=e.clientX-d.dx;st.y=e.clientY-d.dy;place()});
+ box.addEventListener('pointerup',()=>{if(d&&d.moved)save();else if(d&&box.classList.contains('min')){st.min=false;save();place()}d=null});
+ addEventListener('resize',place);place()}
 async function camStart(){
  if(cam.on)return true;cam.err='';
  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){cam.err='Browser ini tidak bisa mengakses kamera (butuh HTTPS).';uiRefresh();return false}
@@ -95,7 +107,7 @@ async function camStart(){
  catch(e){cam.err='Kamera ditolak atau tidak ada: '+(e.message||e.name);uiRefresh();return false}
  if('BarcodeDetector' in window){try{cam.det=new BarcodeDetector({formats:['qr_code']})}catch(e){cam.det=null}}
  if(!cam.det&&!(await loadJsQR())){cam.err='Browser tidak punya pembaca QR bawaan dan pustaka cadangan gagal dimuat (butuh internet sekali). Pakai scanner USB/Bluetooth.';camStop();uiRefresh();return false}
- let box=document.getElementById('camp');if(!box){box=document.createElement('div');box.id='camp';box.innerHTML='<video playsinline muted autoplay></video><button class="ci-x" data-a="camoff" aria-label="Matikan kamera">×</button><small>Kamera check-in aktif</small>';document.body.appendChild(box)}
+ let box=document.getElementById('camp');if(!box){box=document.createElement('div');box.id='camp';box.innerHTML='<video playsinline muted autoplay></video><button class="ci-x" data-a="camoff" aria-label="Matikan kamera">×</button><button class="ci-m" type="button" aria-label="Kecilkan kamera">–</button><small>Kamera check-in aktif · geser untuk memindah</small>';document.body.appendChild(box);campInit(box)}
  const v=box.querySelector('video');v.srcObject=cam.stream;await v.play().catch(()=>{});cam.on=true;sset({cam:1});
  cam.timer=setInterval(async()=>{if(!cam.on||v.readyState<2||!canScan())return;
   try{if(cam.det){const r=await cam.det.detect(v);if(r&&r[0]&&r[0].rawValue)doScan(r[0].rawValue,'camera')}

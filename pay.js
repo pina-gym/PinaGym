@@ -37,10 +37,12 @@ function rekapLines(ym){const L=[],a=(t,b,sz)=>L.push({t,b:!!b,s:sz}),P=payees(y
  a('-'.repeat(PW));a(lrp('TOTAL GAJI','Rp '+fnum(P.reduce((x,s)=>x+s.total,0))),1,11);a('');a('Dicetak '+T0+' '+hhmm(),0,8);return L}
 
 /* ---- PDF teks A4 (Courier + Helvetica-Bold), tanpa library ---- */
-function pdfDoc(lines){const pw=595.28,ph=841.89,m=48,pages=[];let cur=[],y=ph-m;
+function pdfDoc(lines){const pw=595.28,ph=841.89,m=48,pages=[],lg=S.settings.logo?Card.jpg(S.settings.logo):null;let cur=[],y=ph-m;
+ if(lg){const f=Math.min(60/lg.w,60/lg.h),dw=lg.w*f,dh=lg.h*f;cur.push(`q ${dw.toFixed(1)} 0 0 ${dh.toFixed(1)} ${m} ${(y-dh).toFixed(1)} cm /Im0 Do Q`);y-=dh+8}
  lines.forEach(l=>{const sz=l.s||10,lh=sz*1.45;if(y-lh<m){pages.push(cur);cur=[];y=ph-m}y-=lh;if(l.t!=='')cur.push(`BT /${l.b&&sz>=11?'F3':l.b?'F2':'F1'} ${sz} Tf ${m} ${y.toFixed(1)} Td (${asc(l.t).replace(/[\\()]/g,'\\$&')}) Tj ET`)});
  pages.push(cur);const objs=['<</Type/Catalog/Pages 2 0 R>>',null,'<</Type/Font/Subtype/Type1/BaseFont/Courier>>','<</Type/Font/Subtype/Type1/BaseFont/Courier-Bold>>','<</Type/Font/Subtype/Type1/BaseFont/Helvetica-Bold>>'];
- const kids=[];pages.forEach((p,i)=>{const pi=objs.length+1,ci=pi+1;kids.push(pi+' 0 R');objs.push(`<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${pw} ${ph}]/Contents ${ci} 0 R/Resources<</Font<</F1 3 0 R/F2 4 0 R/F3 5 0 R>>>>>>`);const c=p.join('\n');objs.push(`<</Length ${c.length}>>\nstream\n${c}\nendstream`)});
+ if(lg)objs.push(`<</Type/XObject/Subtype/Image/Width ${lg.w}/Height ${lg.h}/ColorSpace/${lg.c===1?'DeviceGray':'DeviceRGB'}/BitsPerComponent 8/Filter/DCTDecode/Length ${lg.bin.length}>>\nstream\n${lg.bin}\nendstream`);
+ const kids=[];pages.forEach((p,i)=>{const pi=objs.length+1,ci=pi+1;kids.push(pi+' 0 R');objs.push(`<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${pw} ${ph}]/Contents ${ci} 0 R/Resources<</Font<</F1 3 0 R/F2 4 0 R/F3 5 0 R>>${lg?'/XObject<</Im0 6 0 R>>':''}>>>>`);const c=p.join('\n');objs.push(`<</Length ${c.length}>>\nstream\n${c}\nendstream`)});
  objs[1]=`<</Type/Pages/Kids[${kids.join(' ')}]/Count ${pages.length}>>`;
  let out='%PDF-1.4\n',off=[];objs.forEach((b,i)=>{off.push(out.length);out+=`${i+1} 0 obj\n${b}\nendobj\n`});
  const xr=out.length;out+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`+off.map(x=>String(x).padStart(10,'0')+' 00000 n \n').join('')+`trailer\n<</Size ${objs.length+1}/Root 1 0 R>>\nstartxref\n${xr}\n%%EOF`;

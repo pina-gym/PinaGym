@@ -19,6 +19,10 @@ Aplikasi manajemen gym dengan dashboard dan menu yang berbeda untuk tiap role (A
 - **Promo & voucher** (persen/rupiah, minimal belanja, masa berlaku, kuota) dan diskon manual di POS; **stok opname** dengan stok minimum dan riwayat; **bonus/potongan** di slip gaji; **WhatsApp massal** tanpa gateway (Daftar Siaran via kontak .vcf, atau kirim berurutan); banner "versi baru tersedia".
 - Laporan, dashboard TV, activity log, pengaturan, backup dan pulihkan data (JSON).
 - Login dengan password ter-hash (PBKDF2), session timeout yang dapat diatur, batas percobaan login.
+- **POS sekali ketuk**: produk dan paket membership tampil sebagai tile; ketuk untuk menambah, keranjang ringkas dengan tombol +/−, tombol **Bayar** mengambang (di HP muncul di atas menu bawah).
+- **Paket member + trainer**: paket bisa ditandai "termasuk trainer". Saat daftar/perpanjang (menu atau POS) kasir/admin memilih trainer dari daftar; member otomatis masuk ke trainer itu dan tiap check-in tercatat sebagai satu sesi (dasar komisi persentase).
+- **Logo gym**: unggah di Pengaturan Gym. Tampil di struk (layar, browser, thermal), kartu member (SVG/PDF), slip & rekap gaji (PDF/cetak), menu samping, login, dan layar TV. Ikut tercadang. Ekspor Excel tidak memuat gambar.
+- **Kamera check-in** di tablet bisa digeser dan diperkecil. Daftar member punya tombol **WA Kartu**.
 
 ## Pakai
 Buka alamat GitHub Pages repo ini, lalu pasang lewat menu "Pasang aplikasi" / "Add to Home screen".
