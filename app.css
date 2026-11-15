@@ -114,3 +114,20 @@ th.ck,td.ck{width:36px}.ck input{width:20px;height:20px;min-height:0;accent-colo
  .tb{flex-wrap:wrap}.tb>*{flex:1 1 140px}
  .modal{max-width:calc(100vw - 24px)}
 }
+
+/* ---- pop-up check-in & kamera ---- */
+.ci{position:fixed;top:max(12px,env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);width:min(460px,calc(100vw - 24px));z-index:90;background:var(--surface);color:var(--ink);border:2px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.35);overflow:hidden}
+.ci-h{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;font-size:15px}
+.ci-x{border:0;background:transparent;color:inherit;font-size:24px;line-height:1;cursor:pointer;min-width:36px;min-height:36px}
+.ci-b{padding:12px 14px;display:grid;gap:4px}.ci-n{font:700 22px var(--f-head)}
+.ci-w{margin-top:4px;padding:8px 10px;border-radius:8px;background:var(--warn-bg);color:var(--warn);font-weight:600}
+.ci-f{display:flex;gap:8px;flex-wrap:wrap;padding:10px 14px 14px}.ci-f .btn{flex:1 1 140px;justify-content:center;min-height:46px}
+.ci-ok{border-color:var(--ok)}.ci-ok .ci-h{background:var(--ok-bg);color:var(--ok)}
+.ci-warn{border-color:var(--warn)}.ci-warn .ci-h{background:var(--warn-bg);color:var(--warn)}
+.ci-err{border-color:var(--err)}.ci-err .ci-h{background:var(--err-bg);color:var(--err)}
+.ci-gray .ci-h{background:var(--line)}.ci-info{border-color:var(--info)}.ci-info .ci-h{background:var(--info-bg);color:var(--info)}
+#camp{position:fixed;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));width:150px;z-index:40;border-radius:12px;overflow:hidden;background:#000;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+#camp video{width:100%;display:block;aspect-ratio:4/3;object-fit:cover}#camp .ci-x{position:absolute;top:0;right:0;color:#fff;background:#0008}
+#camp small{position:absolute;left:6px;bottom:4px;color:#fff;font-size:10px;text-shadow:0 1px 2px #000}
+@media(max-width:640px){#camp{bottom:72px;width:110px}}
+.sdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:4px;background:var(--mut)}.sdot.on{background:var(--ok)}.sdot.kb{background:var(--info)}
