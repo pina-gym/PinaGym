@@ -20,15 +20,26 @@ function queue(){
   out.push(d>=0?{m,k,kind:'remind',lbl:d===0?'Berakhir hari ini':'Berakhir '+d+' hari lagi',tpl:tplBy('Pengingat Expired'),d}:{m,k,kind:'expired',lbl:'Sudah berakhir',tpl:tplBy('Membership Habis'),d})});
  return out.sort((a,b)=>a.d-b.d)}
 const canWa=()=>can('whatsapp.send')&&can('member.contact');
-const ask=k=>{if(S.cf===k){S.cf='';return true}S.cf=k;render();return false};
-const cfl=(k,a,v,t='Hapus')=>`<button class="btn sm red" data-a="${a}" data-v="${esc(v)}">${S.cf===k?'Yakin hapus?':t}</button>`;
+/* konfirmasi lewat pop-up (bukan klik dua kali) */
+let CUR=null;
+function ask(k,msg,okLabel){if(S.cfok===k){S.cfok='';return true}
+ const c=CUR||{};S.cfAct={a:c.a,v:c.v,d:c.d,k};
+ modal(`<h2 style="margin:0 0 8px">Konfirmasi</h2><p>${msg||'Yakin ingin menghapus data ini? Tindakan ini tidak bisa dibatalkan.'}</p><div class="pill" style="justify-content:flex-end;flex-wrap:wrap"><button type="button" class="btn ghost" data-a="mclose">Batal</button><button type="button" class="btn red" data-a="cfyes" id="cfyes">${okLabel||'Ya, hapus'}</button></div>`);
+ return false}
+const cfl=(k,a,v,t='Hapus')=>`<button class="btn sm red" data-a="${a}" data-v="${esc(v)}">${t}</button>`;
 const fm=(title,k,id,fields,btn)=>modal(`<h2 style="margin:0 0 10px">${title}</h2><form class="form" data-f="${k}" data-id="${esc(id||'')}">${fields}<div class="pill" style="justify-content:flex-end"><button type="button" class="btn ghost" data-a="mclose">Batal</button><button class="btn">${btn||'Simpan'}</button></div></form>`);
 const fld=(l,n,v,t='text',x='')=>`<label>${l}<input name="${n}" type="${t}" value="${esc(v)}" ${x}></label>`;
-const adminsLeft=(skip)=>S.users.filter(u=>u.role==='admin'&&u.on&&u.id!==skip&&!!u.cloud===!!(S.users.find(x=>x.id===skip)||{}).cloud).length;
-const cloudLive=()=>typeof SB!=='undefined'&&SB.live()&&S.user&&S.user.cloud;
+const adminsLeft=skip=>S.users.filter(u=>u.role==='admin'&&u.on&&u.id!==skip).length;
+
+/* ---------- pilih banyak ---------- */
+S.sel={products:new Set(),packages:new Set(),members:new Set()};
+const selTd=(k,id)=>`<td class="ck"><input type="checkbox" data-sel="${k}" data-id="${esc(id)}" aria-label="Pilih"${S.sel[k].has(id)?' checked':''}></td>`;
+const selTh=(k,ids)=>'#sel:'+k+':'+(ids.length&&ids.every(i=>S.sel[k].has(i))?1:0);
+const selBar=(k,ids,ok)=>ok&&ids.length?`<div class="bulk"><span>${S.sel[k].size?`<b>${S.sel[k].size}</b> dipilih`:'Centang beberapa data untuk dihapus sekaligus'}</span><span class="pill" style="flex-wrap:wrap">${S.sel[k].size?`<button class="btn sm red" data-a="bulkdel" data-v="${k}">Hapus terpilih (${S.sel[k].size})</button><button class="btn sm ghost" data-a="selclear" data-v="${k}">Batal pilih</button>`:''}<button class="btn sm ghost" data-a="selall" data-v="${k}">Pilih semua (${ids.length})</button><button class="btn sm red" data-a="bulkall" data-v="${k}">Hapus semua (${ids.length})</button></span></div>`:'';
+const memList=()=>{const f=S.filter,q=S.q.toLowerCase();return S.members.filter(m=>(!q||m.name.toLowerCase().includes(q)||m.code.toLowerCase().includes(q))&&(!f||mstat(m)[0]===f))};
+const selIds=k=>k==='products'?S.products.map(x=>x.id):k==='packages'?PKG.map(x=>x.id):memList().map(x=>x.id);
 
 /* ---------- menu & dashboard ---------- */
-MENU.splice(MENU.findIndex(m=>m[0]==='system')+1,0,['cloud','Koneksi Database','settings.manage','db','Sistem']);
 const _dash=P.dashboard;
 P.dashboard=()=>{let b='';if(canWa()){const n=queue().length;if(n)b=`<div class="note" style="background:var(--warn-bg);color:var(--warn);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span><b>${n} pesan WhatsApp</b> menunggu: sambutan member baru dan pengingat membership.</span><button class="btn sm" data-a="go" data-v="whatsapp">Buka antrean</button></div>`}return b+_dash()};
 
@@ -36,19 +47,19 @@ P.dashboard=()=>{let b='';if(canWa()){const n=queue().length;if(n)b=`<div class=
 P.members=()=>{const c=can('member.contact');const f=S.filter,q=S.q.toLowerCase();
  const list=S.members.filter(m=>(!q||m.name.toLowerCase().includes(q)||m.code.toLowerCase().includes(q))&&(!f||mstat(m)[0]===f));
  return`${c?'':'<p class="mut">Akses terbatas: kontak (HP) disembunyikan untuk role Anda.</p>'}<div class="tb"><input id="q" placeholder="Cari nama / kode" value="${esc(S.q)}"><select data-ch="filter"><option value="">Semua status</option>${['Aktif','Akan Expired','Expired','Freeze'].map(x=>`<option${f===x?' selected':''}>${x}</option>`).join('')}</select>${can('member.create')?`<button class="btn ghost" data-a="go" data-v="register">${ico('plus')} Daftar baru</button>`:''}</div>
- <div class="card" id="mlist">${tbl(['Kode','Nama',...(c?['No. HP']:[]),'Paket','Berakhir','Status',''],list.map(m=>`<tr><td>${m.code}</td><td>${esc(m.name)}</td>${c?`<td>${esc(m.phone)}</td>`:''}<td>${esc(pkgName(m.pkg))}</td><td>${m.end}</td><td>${badge(mstat(m))}</td><td><span class="pill" style="flex-wrap:wrap;min-width:150px">${can('member.view')?`<button class="btn sm ghost" data-a="mcard" data-v="${m.id}">Kartu</button>`:''}${canWa()&&m.phone?`<button class="btn sm ghost" data-a="wasend" data-v="${m.id}" data-t="${mstat(m)[0]==='Expired'?tplBy('Membership Habis').id:tplBy('Pengingat Expired').id}">WA</button>`:''}${can('member.edit')?`<button class="btn sm ghost" data-a="editmember" data-v="${m.id}">Ubah</button>`:''}${can('membership.freeze')?`<button class="btn sm ghost" data-a="freeze" data-v="${m.id}">${m.freeze?'Aktifkan':'Freeze'}</button>`:''}${can('member.delete')?cfl('dm'+m.id,'delmember',m.id):''}</span></td></tr>`))}</div>`};
+ <div class="card" id="mlist">${selBar('members',list.map(m=>m.id),can('member.delete'))}${tbl([...(can('member.delete')?[selTh('members',list.map(m=>m.id))]:[]),'Kode','Nama',...(c?['No. HP']:[]),'Paket','Berakhir','Status',''],list.map(m=>`<tr>${can('member.delete')?selTd('members',m.id):''}<td>${m.code}</td><td>${esc(m.name)}</td>${c?`<td>${esc(m.phone)}</td>`:''}<td>${esc(pkgName(m.pkg))}</td><td>${m.end}</td><td>${badge(mstat(m))}</td><td><span class="pill" style="flex-wrap:wrap;min-width:150px">${can('member.view')?`<button class="btn sm ghost" data-a="mcard" data-v="${m.id}">Kartu</button>`:''}${canWa()&&m.phone?`<button class="btn sm ghost" data-a="wasend" data-v="${m.id}" data-t="${mstat(m)[0]==='Expired'?tplBy('Membership Habis').id:tplBy('Pengingat Expired').id}">WA</button>`:''}${can('member.edit')?`<button class="btn sm ghost" data-a="editmember" data-v="${m.id}">Ubah</button>`:''}${can('membership.freeze')?`<button class="btn sm ghost" data-a="freeze" data-v="${m.id}">${m.freeze?'Aktifkan':'Freeze'}</button>`:''}${can('member.delete')?cfl('dm'+m.id,'delmember',m.id):''}</span></td></tr>`))}</div>`};
 
 /* ---------- paket ---------- */
 P.packages=()=>{const mg=can('package.manage');return`${mg?`<form class="card form wide" data-f="addpkg"><h2>Tambah paket</h2>${fld('Nama paket','name','','text','required')}${fld('Durasi (hari)','days','30','number','min="1" required')}${fld('Harga (Rp)','price','','number','min="0" required')}<button class="btn">Tambah Paket</button></form>`:''}
- <div class="card">${tbl(['Paket','Durasi','>Harga','Status',''],PKG.map(p=>`<tr><td>${esc(p.name)}</td><td>${p.days} hari</td><td class="r">${rp(p.price)}</td><td>${badge(p.on?['Aktif','b-ok']:['Nonaktif','b-gray'])}</td><td>${mg?`<span class="pill" style="flex-wrap:wrap;min-width:150px"><button class="btn sm" data-a="editpkg" data-v="${p.id}">Ubah harga</button><button class="btn sm ghost" data-a="pkgtoggle" data-v="${p.id}">${p.on?'Nonaktifkan':'Aktifkan'}</button>${cfl('dp'+p.id,'delpkg',p.id)}</span>`:''}</td></tr>`))}</div>`};
+ <div class="card">${selBar('packages',PKG.map(p=>p.id),mg)}${tbl([...(mg?[selTh('packages',PKG.map(p=>p.id))]:[]),'Paket','Durasi','>Harga','Status',''],PKG.map(p=>`<tr>${mg?selTd('packages',p.id):''}<td>${esc(p.name)}</td><td>${p.days} hari</td><td class="r">${rp(p.price)}</td><td>${badge(p.on?['Aktif','b-ok']:['Nonaktif','b-gray'])}</td><td>${mg?`<span class="pill" style="flex-wrap:wrap;min-width:150px"><button class="btn sm" data-a="editpkg" data-v="${p.id}">Ubah harga</button><button class="btn sm ghost" data-a="pkgtoggle" data-v="${p.id}">${p.on?'Nonaktifkan':'Aktifkan'}</button>${cfl('dp'+p.id,'delpkg',p.id)}</span>`:''}</td></tr>`))}</div>`};
 
 /* ---------- produk ---------- */
 P.products=()=>{const mg=can('product.manage'),cs=can('product.cost');return`${mg?`<form class="card form wide" data-f="addprod"><h2>Tambah produk</h2>${fld('Nama produk','name','','text','required')}${fld('Harga jual (Rp)','price','','number','min="0" required')}${cs?fld('Harga modal (Rp)','cost','0','number','min="0"'):''}${fld('Stok awal','stock','0','number','required')}<button class="btn">Tambah Produk</button></form>`:'<p class="mut">Mode hanya-lihat.</p>'}
- <div class="card">${tbl(['Produk','>Harga',...(cs?['>Modal']:[]),'>Stok',...(mg?['']:[])],S.products.map(p=>`<tr><td>${esc(p.name)}</td><td class="r">${rp(p.price)}</td>${cs?`<td class="r">${rp(p.cost||0)}</td>`:''}<td class="r">${p.stock}</td>${mg?`<td><span class="pill" style="flex-wrap:wrap;min-width:150px"><button class="btn sm" data-a="editprod" data-v="${p.id}">Ubah</button>${cfl('dd'+p.id,'delprod',p.id)}</span></td>`:''}</tr>`))}</div>`};
+ <div class="card">${selBar('products',S.products.map(p=>p.id),mg)}${tbl([...(mg?[selTh('products',S.products.map(p=>p.id))]:[]),'Produk','>Harga',...(cs?['>Modal']:[]),'>Stok',...(mg?['']:[])],S.products.map(p=>`<tr>${mg?selTd('products',p.id):''}<td>${esc(p.name)}</td><td class="r">${rp(p.price)}</td>${cs?`<td class="r">${rp(p.cost||0)}</td>`:''}<td class="r">${p.stock}</td>${mg?`<td><span class="pill" style="flex-wrap:wrap;min-width:150px"><button class="btn sm" data-a="editprod" data-v="${p.id}">Ubah</button>${cfl('dd'+p.id,'delprod',p.id)}</span></td>`:''}</tr>`))}</div>`};
 
 /* ---------- user ---------- */
-P.users=()=>{const cl=cloudLive();return`${S.users.some(u=>u.cloud)?`<div class="note">Akun <b>Cloud</b> berasal dari Supabase. ${cl?'Tambah, reset password, dan hapus dijalankan lewat Edge Function admin-users.':'Login dengan akun Supabase untuk mengelolanya.'}</div>`:''}<div class="card">${tbl(['Nama','Username','Role','Status',''],S.users.map(u=>{const me=u.id===S.user.id,mine=!!u.cloud===!!S.user.cloud,okc=!u.cloud||cl;return`<tr><td>${esc(u.name)}${me?' (Anda)':''}</td><td>${esc(u.username)}</td><td>${ROLES[u.role]}</td><td>${badge(u.on?['Aktif','b-ok']:['Nonaktif','b-gray'])} ${u.cloud?badge(['Cloud','b-info']):badge(['Lokal','b-gray'])}${u.def?' '+badge(['Password awal','b-warn']):''}</td><td>${okc?`<span class="pill" style="flex-wrap:wrap;min-width:150px"><input type="password" placeholder="Password baru" data-pw="${u.id}" style="width:130px"><button class="btn sm ghost" data-a="resetpw" data-v="${u.id}">Reset</button><button class="btn sm" data-a="edituser" data-v="${u.id}">Ubah</button>${me?'':`<button class="btn sm ghost" data-a="usertoggle" data-v="${u.id}">${u.on?'Nonaktifkan':'Aktifkan'}</button>${cfl('du'+u.id,'deluser',u.id)}`}</span>`:'<span class="mut">Login Supabase untuk mengelola</span>'}</td></tr>`}))}</div>
- <form class="card form wide" data-f="adduser"><h2>Tambah user ${cl?'(akun Supabase)':'(akun lokal)'}</h2>${fld('Nama','name','','text','required')}${fld('Username','username','','text','required')}${fld('Password (min. 6)','password','','password','minlength="6" required')}<label>Role<select name="role">${Object.entries(ROLES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></label><button class="btn">Tambah User</button></form>`};
+P.users=()=>`<div class="note">Akun pengguna disimpan di perangkat ini (tidak perlu Supabase). Admin bebas menambah, mengubah, dan menghapus. Ikut tercadangkan di menu Backup Database.</div><div class="card">${tbl(['Nama','Username','Role','Status','Gaji pokok',''],S.users.map(u=>{const me=u.id===S.user.id;return`<tr><td>${esc(u.name)}${me?' (Anda)':''}</td><td>${esc(u.username)}</td><td>${ROLES[u.role]}</td><td>${badge(u.on?['Aktif','b-ok']:['Nonaktif','b-gray'])}${u.def?' '+badge(['Password awal','b-warn']):''}</td><td>${u.base?rp(u.base):'-'}</td><td><span class="pill" style="flex-wrap:wrap"><button class="btn sm" data-a="edituser" data-v="${u.id}">Ubah</button><button class="btn sm ghost" data-a="pwuser" data-v="${u.id}">Password</button>${me?'':`<button class="btn sm ghost" data-a="usertoggle" data-v="${u.id}">${u.on?'Nonaktifkan':'Aktifkan'}</button>${cfl('du'+u.id,'deluser',u.id)}`}</span></td></tr>`}))}</div>
+ <form class="card form wide" data-f="adduser"><h2>Tambah user</h2>${fld('Nama','name','','text','required')}${fld('Username','username','','text','required')}${fld('Password (min. 6)','password','','password','minlength="6" required')}<label>Role<select name="role">${Object.entries(ROLES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></label><button class="btn">Tambah User</button></form>`;
 
 /* ---------- WhatsApp ---------- */
 P.whatsapp=()=>{const t=S.tpl.find(x=>x.id==S.wa.t)||S.tpl[0]||{id:'',name:'',body:''},g=S.wa.g,soon=iso(addD(TODAY,+S.settings.expiring_days)),q=queue(),cw=canWa();
@@ -61,16 +72,6 @@ P.whatsapp=()=>{const t=S.tpl.find(x=>x.id==S.wa.t)||S.tpl[0]||{id:'',name:'',bo
  ${can('whatsapp.manage')?`<div class="card form"><label>Isi template (variabel: {nama} {kode} {tanggal} {sisa} {paket} {gym})<textarea id="tplbody" rows="3">${esc(t.body)}</textarea></label><button class="btn" data-a="savetpl" data-v="${t.id}">Simpan Template</button></div>`:'<p class="mut">Gunakan template yang disediakan. Isi template tidak dapat diubah oleh role Anda.</p>'}
  <div class="card"><h2>Kirim manual</h2>${cw?'':'<p class="mut">Role Anda tidak memiliki akses kontak/WhatsApp.</p>'}${tbl(['Nama','Kode','Berakhir',''],l.map(m=>`<tr><td>${esc(m.name)}</td><td>${m.code}</td><td>${m.end}</td><td>${cw&&m.phone?`<button class="btn sm" data-a="wasend" data-v="${m.id}" data-t="${esc(t.id)}">Kirim WA</button>`:''}</td></tr>`))}</div>`};
 
-/* ---------- koneksi Supabase ---------- */
-P.cloud=()=>{const c=SB.cfg(),st=SB.st,live=cloudLive();
- return`<div class="note">Data selalu disimpan di perangkat lebih dulu dan tetap bisa dipakai tanpa internet. Setelah terhubung, perubahan dikirim otomatis ke Supabase saat online.</div>
- <form class="card form" data-f="cloudcfg"><h2>Pengaturan Supabase</h2>${fld('Project URL','url',c?c.url:'','url','placeholder="https://xxxx.supabase.co" required')}${fld('Anon public key','key',c?c.key:'','text','placeholder="eyJ..." required')}<div class="pill"><button class="btn">Simpan &amp; Uji Koneksi</button>${c?'<button type="button" class="btn ghost" data-a="cloudtest">Uji lagi</button>':''}</div><p class="mut">Ada di Supabase: Project Settings → API. Jangan memakai kunci <code>service_role</code>.</p>${S.cmsg?`<div class="note" style="background:${S.cok?'var(--ok-bg)':'var(--err-bg)'};color:${S.cok?'var(--ok)':'var(--err)'}">${esc(S.cmsg)}</div>`:''}</form>
- ${c?`<div class="card"><h2>Status sinkron</h2><p>Koneksi: ${badge(live?['Login Supabase aktif','b-ok']:['Dikonfigurasi, belum login','b-warn'])} ${badge(navigator.onLine?['Online','b-ok']:['Offline','b-warn'])}</p>
- <p>${live?'Terakhir tersinkron: <b>'+(st.last?new Date(st.last).toLocaleString('id-ID'):'belum pernah')+'</b>.':'Keluar lalu masuk memakai <b>akun Supabase</b> (username dan password yang dibuat di Authentication) agar sinkron berjalan. Akun lokal tidak disinkronkan.'}${st.busy?' Sedang sinkron…':''}</p>
- ${st.err?`<div class="note" style="background:var(--err-bg);color:var(--err)">Gagal: ${esc(st.err)}</div>`:''}${st.rej?`<p class="mut">${st.rej} data ditolak server karena aturan hak akses atau validasi.</p>`:''}
- <p class="pill" style="flex-wrap:wrap">${live?`<button class="btn" data-a="cloudsync">${ico('refresh')} Sinkron sekarang</button><button class="btn ghost" data-a="cloudreset">${S.cf==='cr'?'Yakin? Data lokal diganti data server':'Ambil ulang dari server'}</button>`:''}<button class="btn red" data-a="clouddisc">${S.cf==='cd'?'Yakin putuskan?':'Putuskan koneksi'}</button></p></div>`:''}
- <div class="card"><h2>Cara menghubungkan</h2><ol><li>Pasang <code>supabase/schema.sql</code> di SQL Editor dan buat admin pertama (lihat supabase/README.md).</li><li>Isi URL dan anon key di atas, lalu <b>Simpan &amp; Uji Koneksi</b>.</li><li>Keluar, lalu masuk dengan akun Supabase (username admin yang dibuat saat bootstrap).</li><li>Pilih sumber data pertama: ambil dari server atau unggah data lokal.</li></ol></div>`};
-
 /* ---------- aksi klik ---------- */
 function showCard(id){const m=S.members.find(x=>x.id===id);if(!m)return;S.cardM=id;
  modal(`<div style="max-width:420px;margin:auto">${Card.svg(m,{gym:S.settings.gym_name,pkg:pkgName(m.pkg),end:m.end})}</div><p class="mut" style="margin:10px 0">QR berisi kode <b>${esc(m.code)}</b> untuk check-in. Ukuran cetak 85,6 × 54 mm (kartu ATM).</p><div class="pill" style="flex-wrap:wrap;justify-content:flex-end"><button class="btn ghost" data-a="cardprint">${ico('print')} Cetak</button><button class="btn ghost" data-a="cardpdf">Unduh PDF</button>${canWa()&&m.phone?`<button class="btn" data-a="cardwa">${ico('chat')} Kirim PDF ke WhatsApp</button>`:''}<button class="btn ghost" data-a="mclose">Tutup</button></div>`)}
@@ -78,10 +79,9 @@ const cardOpt=m=>({gym:S.settings.gym_name,pkg:pkgName(m.pkg),end:m.end});
 function afterReg(mid){const b=document.querySelector('#modal .modal p');if(!b)return;
  b.insertAdjacentHTML('afterbegin',`<button class="btn ghost" data-a="mcard" data-v="${mid}" style="margin-right:6px">Kartu Member</button>${canWa()?`<button class="btn" data-a="wawelcome" data-v="${mid}" style="margin-right:6px">${ico('chat')} Kirim WA Selamat Datang</button>`:''}`)}
 
-async function cloudCall(r,okMsg){if(r.ok){toast(okMsg);return true}toast(r.err.message);return false}
 
 function extraClick(a,v,el){
- const D=el.dataset;
+ const D=el.dataset;if(a!=='cfyes')CUR={a,v,d:{...D}};
  if(a==='mcard'){if(can('member.view'))showCard(v);return true}
  if(a==='cardprint'){const m=S.members.find(x=>x.id===S.cardM);if(m)Card.print(m,cardOpt(m));return true}
  if(a==='cardpdf'){const m=S.members.find(x=>x.id===S.cardM);if(m){Card.download(Card.pdf(m,cardOpt(m)),'Kartu-'+m.code+'.pdf');log('kartu_pdf',m.code)}return true}
@@ -95,43 +95,33 @@ function extraClick(a,v,el){
  if(a==='qsend'){const x=queue().find(y=>y.k===v);if(!x||!canWa())return true;if(!openWa(waLink(x.m,x.tpl.body))){toast('Nomor HP kosong.');return true}markSent(x.k,x.m.id);log('wa_antrean',x.m.code+' '+x.kind);render();return true}
  if(a==='qskip'){const x=queue().find(y=>y.k===v);if(x&&canWa()){markSent(x.k,x.m.id);log('wa_lewati',x.m.code);render()}return true}
  if(a==='wanext'){const x=queue().find(y=>y.m.phone);if(!x||!canWa()){toast('Tidak ada pesan yang bisa dikirim.');return true}openWa(waLink(x.m,x.tpl.body));markSent(x.k,x.m.id);log('wa_antrean',x.m.code+' '+x.kind);render();return true}
- if(a==='delmember'){if(!can('member.delete'))return true;if(!ask('dm'+v))return true;const i=S.members.findIndex(x=>x.id===v);if(i>=0){log('member_hapus',S.members[i].code);S.members.splice(i,1)}toast('Member dihapus.');render();return true}
+ if(a==='delmember'){if(!can('member.delete'))return true;if(!ask('dm'+v,'Hapus member ini? Data kunjungan tetap tersimpan.'))return true;const i=S.members.findIndex(x=>x.id===v);if(i>=0){log('member_hapus',S.members[i].code);S.members.splice(i,1)}toast('Member dihapus.');render();return true}
  /* produk */
  if(a==='editprod'){if(!can('product.manage'))return true;const p=S.products.find(x=>x.id===v);if(!p)return true;
   fm('Ubah produk','editprod',v,fld('Nama','name',p.name,'text','required')+fld('Harga jual (Rp)','price',p.price,'number','min="0" required')+(can('product.cost')?fld('Harga modal (Rp)','cost',p.cost||0,'number','min="0"'):'')+fld('Stok','stock',p.stock,'number','required'));return true}
- if(a==='delprod'){if(!can('product.manage'))return true;if(!ask('dd'+v))return true;const i=S.products.findIndex(x=>x.id===v);if(i>=0){log('produk_hapus',S.products[i].name);S.products.splice(i,1);delete S.cart[v]}toast('Produk dihapus.');render();return true}
+ if(a==='delprod'){if(!can('product.manage'))return true;if(!ask('dd'+v,'Hapus produk ini?'))return true;const i=S.products.findIndex(x=>x.id===v);if(i>=0){log('produk_hapus',S.products[i].name);S.products.splice(i,1);delete S.cart[v]}toast('Produk dihapus.');render();return true}
  /* paket */
  if(a==='editpkg'){if(!can('package.manage'))return true;const p=PKG.find(x=>x.id===v);if(!p)return true;
   fm('Ubah paket','editpkg',v,fld('Nama paket','name',p.name,'text','required')+fld('Durasi (hari)','days',p.days,'number','min="1" required')+fld('Harga (Rp)','price',p.price,'number','min="0" required'));return true}
  if(a==='pkgtoggle'){if(!can('package.manage'))return true;const p=PKG.find(x=>x.id===v);if(p){p.on=p.on?0:1;log('paket_status',p.name)}render();return true}
  if(a==='delpkg'){if(!can('package.manage'))return true;const n=S.members.filter(m=>m.pkg===v).length;if(n){S.cf='';toast('Paket dipakai '+n+' member. Gunakan Nonaktifkan.');render();return true}
-  if(!ask('dp'+v))return true;const i=PKG.findIndex(x=>x.id===v);if(i>=0){log('paket_hapus',PKG[i].name);PKG.splice(i,1)}toast('Paket dihapus.');render();return true}
+  if(!ask('dp'+v,'Hapus paket ini?'))return true;const i=PKG.findIndex(x=>x.id===v);if(i>=0){log('paket_hapus',PKG[i].name);PKG.splice(i,1)}toast('Paket dihapus.');render();return true}
  /* member */
  if(a==='editmember'){if(!can('member.edit'))return true;const m=S.members.find(x=>x.id===v);if(!m)return true;
   fm('Ubah data member','editmember',v,fld('Nama','name',m.name,'text','required')+(can('member.contact')?fld('No. HP','phone',m.phone,'tel'):''));return true}
  /* user */
  if(a==='edituser'){if(!can('user.manage'))return true;const u=S.users.find(x=>x.id===v);if(!u)return true;const me=u.id===S.user.id;
-  fm('Ubah user','edituser',v,fld('Nama','name',u.name,'text','required')+`<label>Role<select name="role"${me?' disabled':''}>${Object.entries(ROLES).map(([k,n])=>`<option value="${k}"${k===u.role?' selected':''}>${n}</option>`).join('')}</select></label>`);return true}
+  fm('Ubah user','edituser',v,fld('Nama','name',u.name,'text','required')+fld('No. HP (untuk kirim slip gaji)','phone',u.phone||'','tel')+fld('Gaji pokok (Rp)','base',u.base||0,'number','min="0"')+`<label>Role<select name="role"${me?' disabled':''}>${Object.entries(ROLES).map(([k,n])=>`<option value="${k}"${k===u.role?' selected':''}>${n}</option>`).join('')}</select></label>`);return true}
  if(a==='usertoggle'){if(!can('user.manage'))return true;const u=S.users.find(x=>x.id===v);if(!u||u.id===S.user.id)return true;
   if(u.on&&u.role==='admin'&&!adminsLeft(u.id)){toast('Harus ada minimal satu admin aktif.');return true}
-  if(u.cloud){SB.req('/rest/v1/profiles?id=eq.'+u.id,{method:'PATCH',body:{active:!u.on},prefer:'return=minimal'}).then(r=>{if(r.ok){u.on=u.on?0:1;log('user_status',u.username);render()}else toast(r.err.message)})}
-  else{u.on=u.on?0:1;log('user_status',u.username);render()}return true}
+  u.on=u.on?0:1;log('user_status',u.username);render();return true}
  if(a==='deluser'){if(!can('user.manage'))return true;const u=S.users.find(x=>x.id===v);if(!u||u.id===S.user.id)return true;
-  if(u.role==='admin'&&u.on&&!adminsLeft(u.id)){S.cf='';toast('Harus ada minimal satu admin aktif.');render();return true}
-  if(!ask('du'+v))return true;
-  if(u.cloud){SB.fn('admin-users',{action:'delete',user_id:u.id}).then(r=>{if(r.ok){if(r.data&&r.data.deactivated){u.on=0;toast('User punya riwayat transaksi, jadi dinonaktifkan (tidak bisa login).')}else{S.users=S.users.filter(x=>x.id!==u.id);toast('User dihapus.')}log('user_hapus',u.username);render()}else toast(r.err.message)})}
-  else{S.users=S.users.filter(x=>x.id!==u.id);log('user_hapus',u.username);toast('User dihapus.');render()}return true}
- if(a==='resetpw'){if(!can('user.manage'))return true;const inp=document.querySelector(`[data-pw="${v}"]`),u=S.users.find(x=>x.id===v);if(!inp||!u)return true;
-  if(inp.value.length<6){toast('Password minimal 6 karakter.');return true}
-  if(u.cloud){SB.fn('admin-users',{action:'reset',user_id:u.id,password:inp.value}).then(r=>{if(r.ok){log('user_reset_password',u.username);toast('Password diperbarui.');render()}else toast(r.err.message)})}
-  else setPw(u,inp.value).then(()=>{log('user_reset_password',u.username);render();toast('Password diperbarui.')});return true}
- /* koneksi */
- if(a==='cloudtest'){SB.test().then(r=>{S.cmsg=r.msg;S.cok=r.ok;render()});return true}
- if(a==='cloudsync'){SB.sync();toast('Sinkron dimulai…');return true}
- if(a==='cloudreset'){if(!ask('cr'))return true;SB.resetFromServer().then(()=>{toast('Data diambil dari server.');render()});return true}
- if(a==='clouddisc'){if(!ask('cd'))return true;const wasCloud=S.user&&S.user.cloud;SB.setCfg(null,null);SB.logout();S.users=S.users.filter(u=>!u.cloud);S.base={};S.lp={};S.sbinit=false;S.cmsg='';
-  if(wasCloud){S.user=null;saveSession()}log('supabase_putus');render();toast('Koneksi diputus. Data tetap ada di perangkat.');return true}
- if(a==='sbpull'||a==='sbpush'){modal('');if(a==='sbpull')SB.resetFromServer().then(()=>render());else{S.sbinit=true;SB.sync()}return true}
+  if(u.role==='admin'&&u.on&&!adminsLeft(u.id)){toast('Harus ada minimal satu admin aktif.');return true}
+  if(!ask('du'+v,'Hapus user <b>'+esc(u.name)+'</b>? Transaksi lama tetap tersimpan.'))return true;
+  S.users=S.users.filter(x=>x.id!==u.id);log('user_hapus',u.username);toast('User dihapus.');render();return true}
+ if(a==='pwuser'){if(!can('user.manage'))return true;const u=S.users.find(x=>x.id===v);if(!u)return true;
+  fm('Ganti password: '+esc(u.name),'pwuser',v,fld('Password baru (min. 6)','password','','password','minlength="6" required autocomplete="new-password"'));return true}
+ if(a==='cfyes'){const c=S.cfAct;modal('');if(c&&c.a){S.cfok=c.k;const b=document.createElement('button');Object.entries(c.d||{}).forEach(([n,x])=>b.dataset[n]=x);b.dataset.a=c.a;if(c.v!==undefined)b.dataset.v=c.v;b.hidden=true;document.body.appendChild(b);b.click();b.remove();S.cfok=''}return true}
  return false}
 
 /* ---------- aksi form ---------- */
@@ -145,54 +135,113 @@ function extraSubmit(k,d,f){
  if(k==='editmember'){if(!can('member.edit'))return true;const m=S.members.find(x=>x.id===id);if(!m)return true;m.name=String(d.name).trim()||m.name;if('phone'in d)m.phone=String(d.phone).trim();log('member_ubah',m.code);modal('');render();toast('Data member disimpan.');return true}
  if(k==='edituser'){if(!can('user.manage'))return true;const u=S.users.find(x=>x.id===id);if(!u)return true;const nn=String(d.name).trim()||u.name,nr=(u.id===S.user.id||!d.role)?u.role:d.role;
   if(u.role==='admin'&&nr!=='admin'&&!adminsLeft(u.id)){toast('Harus ada minimal satu admin aktif.');return true}
-  if(u.cloud){SB.req('/rest/v1/profiles?id=eq.'+u.id,{method:'PATCH',body:{name:nn,role:nr},prefer:'return=minimal'}).then(r=>{if(r.ok){u.name=nn;u.role=nr;log('user_ubah',u.username);modal('');render();toast('User disimpan.')}else toast(r.err.message)})}
-  else{u.name=nn;u.role=nr;log('user_ubah',u.username);modal('');render();toast('User disimpan.')}return true}
+  u.name=nn;u.role=nr;if('phone'in d)u.phone=String(d.phone).trim();if('base'in d)u.base=Math.max(0,+d.base||0);log('user_ubah',u.username);modal('');render();toast('User disimpan.');return true}
+ if(k==='pwuser'){if(!can('user.manage'))return true;const u=S.users.find(x=>x.id===id);if(!u)return true;if(String(d.password).length<6){toast('Password minimal 6 karakter.');return true}
+  setPw(u,String(d.password)).then(()=>{log('user_reset_password',u.username);modal('');render();toast('Password diperbarui.')});return true}
  if(k==='adduser'){if(!can('user.manage'))return true;const un=String(d.username).trim().toLowerCase();
   if(!/^[a-z0-9_.-]{3,30}$/.test(un)){toast('Username 3-30 karakter: huruf kecil, angka, titik, strip, garis bawah.');return true}
-  if(S.users.some(x=>x.username===un&&!!x.cloud===cloudLive())){toast('Username sudah dipakai.');return true}
+  if(S.users.some(x=>x.username===un)){toast('Username sudah dipakai.');return true}
   if(!ROLES[d.role]||String(d.password).length<6){toast('Role atau password tidak valid.');return true}
-  if(cloudLive()){SB.fn('admin-users',{action:'create',username:un,name:String(d.name).trim(),role:d.role,password:String(d.password)}).then(r=>{if(r.ok){log('user_tambah',un);toast('User ditambahkan.');SB.sync()}else toast(r.err.message)})}
-  else{const u={id:un,name:String(d.name).trim(),username:un,role:d.role,on:1};setPw(u,String(d.password)).then(()=>{S.users.push(u);log('user_tambah',un);render();toast('User ditambahkan.')})}return true}
- if(k==='cloudcfg'){SB.setCfg(d.url,d.key);S.cmsg='Menguji…';S.cok=false;render();SB.test().then(r=>{S.cmsg=r.msg;S.cok=r.ok;log('supabase_atur');render()});return true}
+  const u={id:un,name:String(d.name).trim(),username:un,role:d.role,on:1};setPw(u,String(d.password)).then(()=>{S.users.push(u);log('user_tambah',un);render();toast('User ditambahkan.')});return true}
  return false}
 
-/* ---------- sinkron pertama ---------- */
-function firstSync(){
- if(S.sbinit||!S.user.cloud)return;
- if(can('settings.manage')&&(S.members.length||S.products.length)){
-  modal(`<h2 style="margin:0 0 8px">Sinkron pertama</h2><p>Terhubung ke Supabase. Pilih sumber data:</p><p><button class="btn" data-a="sbpull" style="width:100%;margin-bottom:8px">Pakai data Supabase (ganti data lokal)</button><button class="btn ghost" data-a="sbpush" style="width:100%">Unggah data lokal ke Supabase</button></p><p class="mut">Jika data di perangkat ini hanya data contoh, pilih yang pertama. Jika sudah ada data nyata di sini dan Supabase masih kosong, pilih yang kedua.</p>`)}
- else SB.resetFromServer().then(()=>render())}
-
-/* ---------- tema warna ---------- */
-// [nama, terang: utama, hover, lembut | gelap: utama, hover, lembut, teks di atas utama]
-const THEMES={oranye:['Oranye',null],biru:['Biru',['#2563eb','#1d4ed8','#e8f0ff','#60a5fa','#93c5fd','#10203d','#07101f']],hijau:['Hijau',['#16a34a','#15803d','#e6f7ec','#4ade80','#86efac','#0f2a1a','#04150a']],
- ungu:['Ungu',['#7c3aed','#6d28d9','#f0e9ff','#a78bfa','#c4b5fd','#1e1535','#0e0820']],merah:['Merah',['#dc2626','#b91c1c','#ffe9e9','#f87171','#fca5a5','#351515','#1f0606']],
- teal:['Teal',['#0d9488','#0f766e','#e0f5f2','#2dd4bf','#5eead4','#0e2a27','#03181a']],abu:['Abu-abu',['#334155','#1e293b','#eef1f5','#cbd5e1','#e2e8f0','#1c2330','#0b1017']]};
+/* ---------- tema warna (bebas pilih) ---------- */
+const PRESET={oranye:['Oranye','#e8590c'],biru:['Biru','#2563eb'],hijau:['Hijau','#16a34a'],ungu:['Ungu','#7c3aed'],merah:['Merah','#dc2626'],pink:['Pink','#db2777'],amber:['Kuning','#d97706'],teal:['Teal','#0d9488'],abu:['Abu-abu','#334155']};
+const hex2=h=>{const m=/^#?([0-9a-f]{6})$/i.exec(h||'');if(!m)return null;const n=parseInt(m[1],16);return[n>>16,(n>>8)&255,n&255]};
+const toHex=a=>'#'+a.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
+const mixc=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t);
+const lumi=a=>{const f=v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)};return .2126*f(a[0])+.7152*f(a[1])+.0722*f(a[2])};
+function palette(h){const c=hex2(h);if(!c)return null;const W=[255,255,255],K=[12,15,20],db=lumi(c)<.3?mixc(c,W,.4):c;
+ return{L:{b:toHex(c),d:toHex(mixc(c,[0,0,0],.15)),s:toHex(mixc(c,W,.9)),i:lumi(c)>.42?'#14181f':'#ffffff'},D:{b:toHex(db),d:toHex(mixc(db,W,.2)),s:toHex(mixc(c,K,.82)),i:lumi(db)>.4?'#0b0f14':'#ffffff'}}}
+const themeHex=()=>{const t=S.settings.theme_color||'oranye';return hex2(t)?(t[0]==='#'?t:'#'+t).toLowerCase():(PRESET[t]||PRESET.oranye)[1]};
 const getMode=()=>{try{return localStorage.getItem('pinagym.mode')||'auto'}catch(e){return'auto'}};
 function applyTheme(){
- const t=THEMES[S.settings.theme_color]||THEMES.oranye,c=t[1],m=getMode(),root=document.documentElement;
+ const h=themeHex(),m=getMode(),root=document.documentElement,pl=h==='#e8590c'?null:palette(h);
  if(m==='auto')root.removeAttribute('data-theme');else root.setAttribute('data-theme',m);
  let st=document.getElementById('thm');if(!st){st=document.createElement('style');st.id='thm';document.head.appendChild(st)}
- const L=c?`--brand:${c[0]};--brand-d:${c[1]};--brand-soft:${c[2]}`:'',D=c?`--brand:${c[3]};--brand-d:${c[4]};--brand-soft:${c[5]};--brand-ink:${c[6]}`:'';
- st.textContent=c?`:root{${L}}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){${D}}}:root[data-theme="dark"]{${D}}`:'';
+ const L=pl?`--brand:${pl.L.b};--brand-d:${pl.L.d};--brand-soft:${pl.L.s};--brand-ink:${pl.L.i}`:'',D=pl?`--brand:${pl.D.b};--brand-d:${pl.D.d};--brand-soft:${pl.D.s};--brand-ink:${pl.D.i}`:'';
+ st.textContent=pl?`:root{${L}}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){${D}}}:root[data-theme="dark"]{${D}}`:'';
  const dark=m==='dark'||(m==='auto'&&matchMedia('(prefers-color-scheme:dark)').matches);
- const mt=document.querySelector('meta[name=theme-color]');if(mt)mt.content=dark?'#11151c':(c?c[0]:'#e8590c')}
+ const mt=document.querySelector('meta[name=theme-color]');if(mt)mt.content=dark?'#11151c':h}
 {const _rv=renderView;renderView=function(){applyTheme();return _rv.apply(this,arguments)}}
+const autoOn=()=>{const v=S.settings.auto_wa;return!(v===0||v==='0'||v===false)};
 const _sys=P.system;
 P.system=()=>_sys()+`<div class="card"><h2>Tampilan</h2><p class="mut">Warna utama berlaku untuk semua perangkat setelah tersinkron. Mode terang/gelap hanya untuk perangkat ini.</p>
- <div class="pill" style="flex-wrap:wrap;gap:10px">${Object.entries(THEMES).map(([k,[n,c]])=>{const on=(S.settings.theme_color||'oranye')===k;return`<button class="btn ghost" data-a="theme" data-v="${k}" aria-pressed="${on}" style="${on?'border:2px solid var(--brand);':''}"><span style="width:16px;height:16px;border-radius:50%;background:${c?c[0]:'#e8590c'};display:inline-block"></span>${n}</button>`}).join('')}</div>
- <p class="pill" style="flex-wrap:wrap;margin-top:12px">${[['auto','Otomatis (ikut perangkat)'],['light','Terang'],['dark','Gelap']].map(([k,n])=>`<button class="btn ${getMode()===k?'':'ghost'}" data-a="tmode" data-v="${k}">${n}</button>`).join('')}</p></div>`;
+ <div class="pill" style="flex-wrap:wrap;gap:10px">${Object.entries(PRESET).map(([k,[n,c]])=>{const on=themeHex()===c;return`<button class="btn ghost" data-a="theme" data-v="${k}" aria-pressed="${on}" style="${on?'border:2px solid var(--brand);':''}"><span style="width:16px;height:16px;border-radius:50%;background:${c};display:inline-block"></span>${n}</button>`}).join('')}</div>
+ <label style="display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap"><b>Warna bebas</b><input type="color" id="tcol" value="${themeHex()}" style="width:64px;height:40px;padding:2px;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer"><code id="tcode">${themeHex()}</code></label>
+ <p class="pill" style="flex-wrap:wrap;margin-top:12px">${[['auto','Otomatis (ikut perangkat)'],['light','Terang'],['dark','Gelap']].map(([k,n])=>`<button class="btn ${getMode()===k?'':'ghost'}" data-a="tmode" data-v="${k}">${n}</button>`).join('')}</p></div>
+ <div class="card"><h2>WhatsApp otomatis saat daftar</h2><p class="mut">Setelah member didaftarkan, WhatsApp langsung terbuka dengan pesan sambutan. Untuk paket selain harian, kartu member (PDF) ikut dikirim: di ponsel lewat menu bagikan, di komputer PDF diunduh lalu dilampirkan manual.</p>
+ <button class="btn ${autoOn()?'':'ghost'}" data-a="autowa">${autoOn()?'Aktif (klik untuk matikan)':'Nonaktif (klik untuk aktifkan)'}</button></div>`;
 const _ec=extraClick;
 extraClick=function(a,v,el){
- if(a==='theme'){if(can('settings.manage')&&THEMES[v]){S.settings.theme_color=v;log('tema_warna',v);render();toast('Warna diganti: '+THEMES[v][0])}return true}
+ if(a==='theme'){if(can('settings.manage')&&PRESET[v]){S.settings.theme_color=v;log('tema_warna',v);render();toast('Warna diganti: '+PRESET[v][0])}return true}
  if(a==='tmode'){try{localStorage.setItem('pinagym.mode',v)}catch(e){}render();return true}
+ if(a==='autowa'){if(can('settings.manage')){S.settings.auto_wa=autoOn()?0:1;log('wa_otomatis_atur',autoOn()?'aktif':'nonaktif');render()}return true}
+ if(a==='pay'){posPay();return true}
+ if(a==='pmset'){S.pmem=v;S.pnew=null;render();return true}
+ if(a==='pmclear'){S.pmem=null;render();return true}
+ if(a==='pnewtoggle'){S.pnew=S.pnew?null:{name:'',phone:''};S.pmem=null;render();return true}
  return _ec.apply(this,arguments)};
+document.addEventListener('change',e=>{const t=e.target;
+ if(t.id==='tcol'&&can('settings.manage')&&hex2(t.value)){S.settings.theme_color=t.value.toLowerCase();log('tema_warna',t.value);render();toast('Warna diganti: '+t.value)}
+ else if(t.id==='ppk'){S.ppk=t.value;render()}});
+document.addEventListener('input',e=>{const t=e.target;
+ if(t.id==='tcol'){const c=document.getElementById('tcode');if(c)c.textContent=t.value}
+ else if(t.id==='pq'){S.pq=t.value;const b=document.getElementById('pres');if(b)b.innerHTML=posResults()}
+ else if(t.id==='pnn'||t.id==='pnp'){S.pnew=S.pnew||{name:'',phone:''};S.pnew[t.id==='pnn'?'name':'phone']=t.value}});
 
-/* ---------- uji login Supabase ---------- */
-{const _pc=P.cloud;
- P.cloud=()=>{let h=_pc();if(SB.hasCfg()&&!cloudLive()){const rows=(S.diag||[]).map(([t,x])=>t==='code'?`<pre style="background:var(--bg);padding:10px;border-radius:8px;overflow:auto;user-select:all;white-space:pre-wrap">${esc(x)}</pre>`:`<div class="note" style="margin:6px 0;${t==='ok'?'background:var(--ok-bg);color:var(--ok)':t==='err'?'background:var(--err-bg);color:var(--err)':''}">${esc(x)}</div>`).join('');
-  h+=`<form class="card form" data-f="cloudlogintest"><h2>Uji login Supabase</h2><p class="mut">Cek bertahap kenapa login gagal. Tidak mengubah apa pun.</p>${fld('Email atau username','u','','text','required autocomplete="off"')}${fld('Password','p','','password','required autocomplete="off"')}<button class="btn">Uji Login</button>${rows}</form>`}return h}}
-const _es=extraSubmit;
-extraSubmit=function(k,d,f){
- if(k==='cloudlogintest'){S.diag=[['hint','Menguji…']];render();SB.diagnose(d.u,d.p).then(r=>{S.diag=r;render()});return true}
- return _es.apply(this,arguments)};
+/* ---------- kasir: member harian, paket, dan produk dalam satu struk ---------- */
+const isDaily=pk=>{const p=typeof pk==='string'?PKG.find(x=>x.id===pk):pk;return!!p&&p.days<=1};
+const posPkg=()=>S.ppk?PKG.find(x=>x.id===S.ppk&&x.on):null;
+const posTotal=()=>cartTotal()+(posPkg()?posPkg().price:0);
+function posResults(){const q=String(S.pq||'').trim().toLowerCase();if(q.length<2)return'<span class="mut">Ketik minimal 2 huruf nama atau kode member.</span>';
+ const r=S.members.filter(m=>m.name.toLowerCase().includes(q)||m.code.toLowerCase().includes(q)).slice(0,6);
+ return r.length?r.map(m=>`<button class="btn sm ghost" data-a="pmset" data-v="${m.id}">${esc(m.name)} · ${m.code}</button>`).join(' '):'<span class="mut">Tidak ditemukan.</span>'}
+P.pos=()=>{const mem=S.pmem?S.members.find(x=>x.id===S.pmem):null,pk=posPkg(),canReg=can('member.create'),canExt=can('member.extend');
+ const today=S.members.filter(m=>isDaily(m.pkg)&&m.end>=T0&&!m.freeze).slice(-8).reverse();
+ const pkOpts=PKG.filter(p=>p.on&&(mem?canExt:canReg||canExt)).map(p=>`<option value="${p.id}"${S.ppk===p.id?' selected':''}>${esc(p.name)} (${rp(p.price)})</option>`).join('');
+ return`${S.shift?'':'<div class="note">Shift belum dibuka. Buka shift di menu Shift Kasir.</div>'}
+ <div class="card"><h2>Pelanggan</h2>
+  ${mem?`<p class="pill" style="flex-wrap:wrap"><b>${esc(mem.name)}</b> <span class="mut">${mem.code}</span> ${badge(mstat(mem))}<button class="btn sm ghost" data-a="pmclear">Lepas</button></p>`
+  :S.pnew?`<div class="form"><div class="pill" style="flex-wrap:wrap"><b>Member baru</b><button class="btn sm ghost" data-a="pnewtoggle">Batal</button></div><label>Nama<input id="pnn" value="${esc(S.pnew.name)}" placeholder="Nama pelanggan"></label><label>No. HP (untuk WhatsApp)<input id="pnp" type="tel" value="${esc(S.pnew.phone)}" placeholder="08xxxxxxxxxx"></label></div>`
+  :`<p class="mut" style="margin:0 0 8px">Opsional. Pilih member agar pembelian tercatat, atau daftarkan member harian baru.</p>
+   ${today.length?`<p style="margin:0 0 8px"><span class="mut">Member harian hari ini:</span> ${today.map(m=>`<button class="btn sm ghost" data-a="pmset" data-v="${m.id}">${esc(m.name)}</button>`).join(' ')}</p>`:''}
+   <div class="tb"><input id="pq" placeholder="Cari member (nama / kode)" value="${esc(S.pq||'')}" autocomplete="off">${canReg?'<button class="btn ghost" data-a="pnewtoggle">'+ico('plus')+' Member baru</button>':''}</div><div id="pres" style="margin-top:6px">${posResults()}</div>`}
+  ${pkOpts?`<label style="margin-top:10px">Paket membership ${mem?'(perpanjang)':S.pnew?'(untuk member baru)':''}<select id="ppk"><option value="">Tanpa paket</option>${pkOpts}</select></label>`:''}
+  ${pk&&!mem&&!S.pnew?'<p class="mut">Pilih member atau klik Member baru untuk memakai paket ini.</p>':''}
+ </div>
+ <div class="card">${tbl(['Produk','>Harga','>Stok','Qty'],S.products.map(p=>`<tr><td>${esc(p.name)}</td><td class="r">${rp(p.price)}</td><td class="r">${p.stock}</td><td><input class="qty" type="number" min="0" max="${p.stock}" value="${S.cart[p.id]||0}" data-id="${p.id}" style="width:80px"></td></tr>`))}</div>
+ <div class="card pill" style="display:flex;justify-content:space-between;flex-wrap:wrap"><div>${pk?`<small class="mut">Paket ${esc(pk.name)}: ${rp(pk.price)}</small><br>`:''}Total: <b id="posTotal" style="font:700 22px var(--f-head)">${rp(posTotal())}</b></div><div class="pill"><select id="pm"><option value="cash">Tunai</option><option value="noncash">Non-tunai</option></select>${can('pos.checkout')?'<button class="btn" data-a="pay">Bayar</button>':''}</div></div>`};
+function posPay(){
+ if(!can('pos.checkout'))return;
+ if(!S.shift){toast('Buka shift terlebih dahulu.');return}
+ const items=S.products.filter(p=>S.cart[p.id]>0).map(p=>({p,q:S.cart[p.id]})),pk=posPkg(),method=document.getElementById('pm').value,nm=S.pnew&&String(S.pnew.name).trim();
+ if(!items.length&&!pk){toast('Pilih produk atau paket membership.');return}
+ if(pk&&!S.pmem&&!nm){toast('Pilih member, atau isi nama untuk daftar member baru.');return}
+ if(pk&&nm&&!can('member.create')){toast('Role Anda tidak boleh mendaftarkan member.');return}
+ if(pk&&S.pmem&&!can('member.extend')){toast('Role Anda tidak boleh memperpanjang membership.');return}
+ if(items.some(i=>i.q>i.p.stock)){toast('Stok tidak cukup.');return}
+ const grp=uid(),txs=[];let mem=S.pmem?S.members.find(x=>x.id===S.pmem):null,isNew=false;
+ if(pk){
+  if(nm){const t=newMember(nm,String(S.pnew.phone||'').trim(),pk.id,method);t.grp=grp;txs.push(t);mem=S.members.find(x=>x.id===t.mid);isNew=true}
+  else{const base=mem.end>T0?mem.end:T0;mem.end=iso(addD(new Date(base+'T00:00:00'),pk.days));mem.freeze=false;mem.pkg=pk.id;
+   const t=addTx('membership',S.user.id,method,pk.price,[{name:'Perpanjangan '+pk.name,qty:1,price:pk.price,cost:0}],{mid:mem.id,pk:pk.id});t.grp=grp;txs.push(t);log('member_perpanjang',mem.code)}}
+ if(items.length){items.forEach(i=>i.p.stock-=i.q);
+  const t=addTx('pos',S.user.id,method,items.reduce((s,i)=>s+i.p.price*i.q,0),items.map(i=>({name:i.p.name,qty:i.q,price:i.p.price,cost:i.p.cost,pid:i.p.id})),mem?{mid:mem.id}:{});t.grp=grp;txs.push(t);log('pos_checkout',t.inv)}
+ S.cart={};S.pmem=null;S.pnew=null;S.ppk='';S.pq='';
+ render();receipt(txs[0]);if(mem)afterReg(mem.id);
+ if(isNew&&autoSend(mem))toast('Membuka WhatsApp…')}
+{const _rc=receipt;
+ receipt=function(t){const g=t.grp?S.tx.filter(x=>x.grp===t.grp):[t],its=g.flatMap(x=>x.items),total=g.reduce((a,x)=>a+x.total,0),mid=(g.find(x=>x.mid)||{}).mid,m=mid&&S.members.find(x=>x.id===mid),vd=g.every(x=>x.voided);
+  modal(`<div class="rc"><div style="text-align:center"><b>${esc(S.settings.gym_name)}</b><br>${esc(S.settings.gym_address)}<br>${esc(S.settings.gym_phone)}</div><hr><div class="row"><span>${g.map(x=>x.inv).join('<br>')}</span><span>${t.date} ${t.time}</span></div><div>Kasir: ${byName(t.by)}</div>${m?`<div>Member: ${esc(m.name)} (${m.code})</div>`:''}<hr>${its.map(i=>`<div>${esc(i.name)}</div><div class="row"><span>${i.qty} x ${i.price.toLocaleString('id-ID')}</span><span>${(i.qty*i.price).toLocaleString('id-ID')}</span></div>`).join('')}<hr><div class="row"><b>TOTAL</b><b>${rp(total)}</b></div><div class="row"><span>Metode</span><span>${t.method==='cash'?'Tunai':'Non-tunai'}</span></div>${vd?'<div style="text-align:center;color:var(--err)"><b>*** DIBATALKAN ***</b></div>':''}<hr><div style="text-align:center">Terima kasih</div></div><p style="text-align:right;margin:12px 0 0"><button class="btn ghost" data-a="mclose">Tutup</button></p>`)}}
+
+/* ---------- WhatsApp otomatis saat member baru ---------- */
+function autoSend(m){
+ if(!autoOn()||!canWa()||!m||!m.phone)return false;
+ const tp=tplBy('Selamat Datang');markSent('w|'+m.id,m.id);log('wa_otomatis',m.code);
+ if(!isDaily(m.pkg)){
+  const txt=fillTpl(tp.body,m)+'\n\nKartu member Anda terlampir (kode '+m.code+').';
+  Card.share(m,cardOpt(m),txt,'https://wa.me/'+waNum(m.phone)+'?text='+encodeURIComponent(txt)).then(r=>{if(r==='download')toast('PDF kartu diunduh. Lampirkan ke chat WhatsApp yang terbuka.')})}
+ else openWa(waLink(m,tp.body));
+ return true}
+

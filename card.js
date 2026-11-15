@@ -50,7 +50,7 @@ function download(blob,name){const a=document.createElement('a');a.href=URL.crea
 /* Kirim PDF: lembar bagikan perangkat (pilih WhatsApp lalu kontak). Di komputer: unduh PDF dan buka chat nomor member. */
 async function share(m,o,text,waUrl){
  const b=pdf(m,o),name='Kartu-'+m.code+'.pdf',f=new File([b],name,{type:'application/pdf'});
- try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],text,title:'Kartu Member '+o.gym});return'shared'}}
+ try{if(/Android|iPhone|iPad/i.test(navigator.userAgent)&&navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],text,title:'Kartu Member '+o.gym});return'shared'}}
  catch(e){if(e&&e.name==='AbortError')return'cancel'}
  download(b,name);if(waUrl)window.open(waUrl,'_blank','noopener');return'download'}
 

@@ -1,6 +1,6 @@
 # PinaGym
 
-Aplikasi manajemen gym dengan dashboard dan menu yang berbeda untuk tiap role (Admin, Kasir, Receptionist). Berjalan sebagai **PWA**: bisa dipasang di HP atau komputer dan tetap bisa dipakai tanpa internet. Data tersimpan di perangkat lebih dulu, dan bisa disinkronkan otomatis ke Supabase.
+Aplikasi manajemen gym dengan dashboard dan menu yang berbeda untuk tiap role (Admin, Kasir, Receptionist). Berjalan sebagai **PWA**: bisa dipasang di HP atau komputer dan tetap bisa dipakai tanpa internet. Data tersimpan di perangkat lebih dulu, dan dicadangkan otomatis setiap hari ke Supabase.
 
 ## Fitur
 - Dashboard dan menu otomatis menyesuaikan role. Menu yang tidak diizinkan tidak tampil, dan halaman terlarang menampilkan 403.
@@ -10,7 +10,8 @@ Aplikasi manajemen gym dengan dashboard dan menu yang berbeda untuk tiap role (A
 - Paket membership dan produk: tambah, ubah harga, hapus. Manajemen user: tambah, ubah, reset password, nonaktifkan, hapus.
 - POS Kasir, produk dan stok, riwayat transaksi, shift, cetak ulang struk.
 - WhatsApp: template pesan dan **antrean otomatis**: sambutan member baru, pengingat sebelum membership habis (default H-7, H-3, H-1, H-0, bisa diatur), dan pesan setelah habis. Tiap pesan hanya muncul sekali. Pesan dikirim dengan satu ketukan lewat WhatsApp di perangkat Anda.
-- **Koneksi Database**: atur Supabase, login akun Supabase, sinkron offline-first (lihat `supabase/README.md`).
+- **Backup Database**: koneksi Supabase ada di menu ini. Backup otomatis harian seluruh isi aplikasi, daftar backup, pulihkan, hapus, plus backup/pulihkan lewat file (lihat `supabase/README.md`).
+- Tabel otomatis menjadi kartu di HP/tablet; edit dan hapus lewat pop-up konfirmasi; pilih banyak lalu hapus.
 - Laporan, dashboard TV, activity log, pengaturan, backup dan pulihkan data (JSON).
 - Login dengan password ter-hash (PBKDF2), session timeout yang dapat diatur, batas percobaan login.
 
@@ -35,13 +36,13 @@ python3 -m http.server 8080
 Service worker dan hash password butuh `https://` atau `localhost`.
 
 ## Struktur
-- `index.html`, `app.css`, `app.js`, `ui.js`: aplikasi; `sync.js`: koneksi dan sinkron Supabase; `card.js`, `qr.js`: kartu member (QR dan PDF)
+- `index.html`, `app.css`, `app.js`, `ui.js`: aplikasi; `sync.js`: backup Supabase; `ext.js`: konfirmasi, pilih banyak, backup; `card.js`, `qr.js`: kartu member (QR dan PDF)
 - `manifest.webmanifest`, `sw.js`, `icons/`: PWA dan mode offline
-- `supabase/`: skema database (`schema.sql`), Edge Function `admin-users`, dan panduan pasang
+- `supabase/`: `backup.sql` (tabel backup) dan panduan; `legacy-schema.sql` = skema sinkron lama (tidak dipakai lagi)
 - `php/`: versi PHP + SQLite untuk XAMPP (validasi izin di server). Lihat `php/README.md`.
 
 ## Catatan keamanan
-Tanpa Supabase, pembatasan role dijalankan oleh aplikasi di perangkat itu sendiri, jadi orang yang menguasai perangkat dan browser-nya dapat mengubah data lokal. Setelah terhubung ke Supabase dan login dengan akun Supabase, hak akses diperiksa server (Row Level Security) untuk semua data yang disinkronkan.
+User dan role disimpan lokal di perangkat dan dibatasi oleh aplikasi itu sendiri, jadi orang yang menguasai perangkat dan browser-nya dapat mengubah data lokal. Backup di Supabase hanya bisa dibaca akun backup (Row Level Security) dan berisi hash password user.
 
 ## WhatsApp: batasan
 Aplikasi membuka WhatsApp dengan nomor dan pesan sudah terisi, lalu Anda menekan kirim. Pengiriman tanpa disentuh sama sekali (otomatis di latar belakang) memerlukan layanan gateway WhatsApp berbayar atau WhatsApp Business API, dan belum dipasang. PDF kartu terlampir otomatis hanya pada ponsel (lembar bagikan). Di komputer, PDF diunduh lalu dilampirkan manual.

@@ -339,8 +339,9 @@ create trigger trg_20_guard before update on public.profiles
 -- Semua fungsi idempoten terhadap p_id: dipanggil ulang saat sinkron tidak membuat data ganda.
 
 -- p_items: [{"product_id":"<uuid>","qty":2}, ...]
+drop function if exists public.pos_checkout(uuid, text, jsonb, text, timestamptz);
 create or replace function public.pos_checkout(p_id uuid, p_invoice text, p_items jsonb, p_method text,
-                                               p_at timestamptz default now())
+                                               p_at timestamptz default now(), p_member uuid default null)
 returns uuid language plpgsql security definer set search_path = public as $$
 declare
   v_user uuid := auth.uid(); v_total bigint := 0; v_shift uuid; v_item uuid; v_prod products%rowtype;
@@ -359,8 +360,11 @@ begin
   end if;
 
   select id into v_shift from shifts where user_id = v_user and closed_at is null limit 1;
-  insert into transactions (id, invoice, type, user_id, total, method, shift_id, created_at)
-  values (p_id, p_invoice, 'pos', v_user, 0, p_method, v_shift, least(coalesce(p_at, now()), now()));
+  if p_member is not null and not exists (select 1 from members where id = p_member and deleted_at is null) then
+    raise exception 'Member tidak ditemukan';
+  end if;
+  insert into transactions (id, invoice, type, user_id, member_id, total, method, shift_id, created_at)
+  values (p_id, p_invoice, 'pos', v_user, p_member, 0, p_method, v_shift, least(coalesce(p_at, now()), now()));
 
   for e in select * from jsonb_array_elements(p_items) loop
     v_pid := (e ->> 'product_id')::uuid;
@@ -636,7 +640,7 @@ grant select on public.public_settings to anon, authenticated;
 grant usage on all sequences in schema public to authenticated;
 
 grant execute on function public.is_active_user(), public.has_perm(text), public.my_permissions(),
-  public.pos_checkout(uuid, text, jsonb, text, timestamptz),
+  public.pos_checkout(uuid, text, jsonb, text, timestamptz, uuid),
   public.membership_sale(uuid, text, uuid, uuid, text, timestamptz),
   public.void_transaction(uuid), public.delete_transaction(uuid) to authenticated;
 -- bootstrap_admin() sengaja tidak diberi ke authenticated: jalankan dari SQL Editor.

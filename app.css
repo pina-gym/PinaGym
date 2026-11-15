@@ -92,3 +92,25 @@ img{max-width:100%}
 #printcard{display:none}
 @media print{@page{size:85.6mm 54mm;margin:0}body>*:not(#printcard){display:none!important}#printcard{display:block!important;width:85.6mm;height:54mm}#printcard .mcard{width:85.6mm;height:54mm;border-radius:0;box-shadow:none}}
 .b-info{background:#e0ecff;color:#1d4ed8}
+
+/* ---- pilih banyak & tabel responsif ---- */
+.bulk{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:-4px 0 10px;padding:8px 10px;border-radius:8px;background:var(--brand-soft);font-size:13px}
+th.ck,td.ck{width:36px}.ck input{width:20px;height:20px;min-height:0;accent-color:var(--brand)}
+.btn.red{background:var(--err);color:#fff}
+@media(max-width:900px){
+ .tw{overflow:visible}
+ table.rt,table.rt tbody{display:block}
+ table.rt tr.th{display:none}
+ table.rt tr{display:block;border:1px solid var(--line);border-radius:12px;margin:0 0 10px;padding:6px 12px;background:var(--surface)}
+ table.rt td{display:flex;justify-content:space-between;align-items:center;gap:14px;white-space:normal;text-align:right;border:0;padding:6px 0;border-bottom:1px dashed var(--line)}
+ table.rt td:last-child{border-bottom:0}
+ table.rt td::before{content:attr(data-label);font-weight:600;font-size:12px;color:var(--mut);text-align:left;flex:0 0 34%}
+ table.rt td[data-label=""]{display:block;text-align:left}
+ table.rt td[data-label=""]::before{display:none}
+ table.rt td[colspan]{display:block;text-align:left}table.rt td[colspan]::before{display:none}
+ table.rt td.ck{width:auto;display:flex;justify-content:flex-start}
+ table.rt .pill{flex-wrap:wrap;gap:8px;min-width:0!important;width:100%}
+ table.rt .btn.sm{min-height:42px;padding:8px 14px}
+ .tb{flex-wrap:wrap}.tb>*{flex:1 1 140px}
+ .modal{max-width:calc(100vw - 24px)}
+}
