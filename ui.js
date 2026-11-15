@@ -20,6 +20,7 @@ function queue(){
   out.push(d>=0?{m,k,kind:'remind',lbl:d===0?'Berakhir hari ini':'Berakhir '+d+' hari lagi',tpl:tplBy('Pengingat Expired'),d}:{m,k,kind:'expired',lbl:'Sudah berakhir',tpl:tplBy('Membership Habis'),d})});
  return out.sort((a,b)=>a.d-b.d)}
 const canWa=()=>can('whatsapp.send')&&can('member.contact');
+const canCW=()=>canWa()||can('member.sendcard');
 /* konfirmasi lewat pop-up (bukan klik dua kali) */
 let CUR=null;
 function ask(k,msg,okLabel){if(S.cfok===k){S.cfok='';return true}
@@ -47,7 +48,7 @@ P.dashboard=()=>{let b='';if(canWa()){const n=queue().length;if(n)b=`<div class=
 P.members=()=>{const c=can('member.contact');const f=S.filter,q=S.q.toLowerCase();
  const list=S.members.filter(m=>(!q||m.name.toLowerCase().includes(q)||m.code.toLowerCase().includes(q))&&(!f||mstat(m)[0]===f));
  return`${c?'':'<p class="mut">Akses terbatas: kontak (HP) disembunyikan untuk role Anda.</p>'}<div class="tb"><input id="q" placeholder="Cari nama / kode" value="${esc(S.q)}"><select data-ch="filter"><option value="">Semua status</option>${['Aktif','Akan Expired','Expired','Freeze'].map(x=>`<option${f===x?' selected':''}>${x}</option>`).join('')}</select>${can('member.create')?`<button class="btn ghost" data-a="go" data-v="register">${ico('plus')} Daftar baru</button>`:''}</div>
- <div class="card" id="mlist">${selBar('members',list.map(m=>m.id),can('member.delete'))}${tbl([...(can('member.delete')?[selTh('members',list.map(m=>m.id))]:[]),'Kode','Nama',...(c?['No. HP']:[]),'Paket','Berakhir','Status',''],list.map(m=>`<tr>${can('member.delete')?selTd('members',m.id):''}<td>${m.code}</td><td>${esc(m.name)}</td>${c?`<td>${esc(m.phone)}</td>`:''}<td>${esc(pkgName(m.pkg))}</td><td>${m.end}</td><td>${badge(mstat(m))}</td><td><span class="pill" style="flex-wrap:wrap;min-width:150px">${can('member.view')?`<button class="btn sm ghost" data-a="mcard" data-v="${m.id}">Kartu</button>`:''}${canWa()&&m.phone&&can('member.view')?`<button class="btn sm ghost" data-a="mwacard" data-v="${m.id}">WA Kartu</button>`:''}${canWa()&&m.phone?`<button class="btn sm ghost" data-a="wasend" data-v="${m.id}" data-t="${mstat(m)[0]==='Expired'?tplBy('Membership Habis').id:tplBy('Pengingat Expired').id}">WA</button>`:''}${can('member.edit')?`<button class="btn sm ghost" data-a="editmember" data-v="${m.id}">Ubah</button>`:''}${can('membership.freeze')?`<button class="btn sm ghost" data-a="freeze" data-v="${m.id}">${m.freeze?'Aktifkan':'Freeze'}</button>`:''}${can('member.delete')?cfl('dm'+m.id,'delmember',m.id):''}</span></td></tr>`))}</div>`};
+ <div class="card" id="mlist">${selBar('members',list.map(m=>m.id),can('member.delete'))}${tbl([...(can('member.delete')?[selTh('members',list.map(m=>m.id))]:[]),'Kode','Nama',...(c?['No. HP']:[]),'Paket','Berakhir','Status',''],list.map(m=>`<tr>${can('member.delete')?selTd('members',m.id):''}<td>${m.code}</td><td>${esc(m.name)}</td>${c?`<td>${esc(m.phone)}</td>`:''}<td>${esc(pkgName(m.pkg))}</td><td>${m.end}</td><td>${badge(mstat(m))}</td><td><span class="pill" style="flex-wrap:wrap;min-width:150px">${can('member.view')?`<button class="btn sm ghost" data-a="mcard" data-v="${m.id}">Kartu</button>`:''}${canCW()&&m.phone&&can('member.view')?`<button class="btn sm ghost" data-a="mwacard" data-v="${m.id}">WA Kartu</button>`:''}${canWa()&&m.phone?`<button class="btn sm ghost" data-a="wasend" data-v="${m.id}" data-t="${mstat(m)[0]==='Expired'?tplBy('Membership Habis').id:tplBy('Pengingat Expired').id}">WA</button>`:''}${can('member.edit')?`<button class="btn sm ghost" data-a="editmember" data-v="${m.id}">Ubah</button>`:''}${can('membership.freeze')?`<button class="btn sm ghost" data-a="freeze" data-v="${m.id}">${m.freeze?'Aktifkan':'Freeze'}</button>`:''}${can('member.delete')?cfl('dm'+m.id,'delmember',m.id):''}</span></td></tr>`))}</div>`};
 
 /* ---------- paket ---------- */
 P.packages=()=>{const mg=can('package.manage');return`${mg?`<form class="card form wide" data-f="addpkg"><h2>Tambah paket</h2>${fld('Nama paket','name','','text','required')}${fld('Durasi (hari)','days','30','number','min="1" required')}${fld('Harga (Rp)','price','','number','min="0" required')}${ptFields({})}<button class="btn">Tambah Paket</button></form>`:''}
@@ -74,7 +75,7 @@ P.whatsapp=()=>{const t=S.tpl.find(x=>x.id==S.wa.t)||S.tpl[0]||{id:'',name:'',bo
 
 /* ---------- aksi klik ---------- */
 function showCard(id){const m=S.members.find(x=>x.id===id);if(!m)return;S.cardM=id;
- modal(`<div style="max-width:420px;margin:auto">${Card.svg(m,{gym:S.settings.gym_name,pkg:pkgName(m.pkg),end:m.end})}</div><p class="mut" style="margin:10px 0">QR berisi kode <b>${esc(m.code)}</b> untuk check-in. Ukuran cetak 85,6 × 54 mm (kartu ATM).</p><div class="pill" style="flex-wrap:wrap;justify-content:flex-end"><button class="btn ghost" data-a="cardprint">${ico('print')} Cetak</button><button class="btn ghost" data-a="cardpdf">Unduh PDF</button>${canWa()&&m.phone?`<button class="btn" data-a="cardwa">${ico('chat')} Kirim PDF ke WhatsApp</button>`:''}<button class="btn ghost" data-a="mclose">Tutup</button></div>`)}
+ modal(`<div style="max-width:420px;margin:auto">${Card.svg(m,{gym:S.settings.gym_name,pkg:pkgName(m.pkg),end:m.end})}</div><p class="mut" style="margin:10px 0">QR berisi kode <b>${esc(m.code)}</b> untuk check-in. Ukuran cetak 85,6 × 54 mm (kartu ATM).</p><div class="pill" style="flex-wrap:wrap;justify-content:flex-end"><button class="btn ghost" data-a="cardprint">${ico('print')} Cetak</button><button class="btn ghost" data-a="cardpdf">Unduh PDF</button>${canCW()&&m.phone?`<button class="btn" data-a="cardwa">${ico('chat')} Kirim PDF ke WhatsApp</button>`:''}<button class="btn ghost" data-a="mclose">Tutup</button></div>`)}
 const cardOpt=m=>({gym:S.settings.gym_name,pkg:pkgName(m.pkg),end:m.end});
 function afterReg(mid){const b=document.querySelector('#modal .modal p');if(!b)return;
  b.insertAdjacentHTML('afterbegin',`<button class="btn ghost" data-a="mcard" data-v="${mid}" style="margin-right:6px">Kartu Member</button>${canWa()?`<button class="btn" data-a="wawelcome" data-v="${mid}" style="margin-right:6px">${ico('chat')} Kirim WA Selamat Datang</button>`:''}`)}
@@ -85,7 +86,7 @@ function extraClick(a,v,el){
  if(a==='mcard'){if(can('member.view'))showCard(v);return true}
  if(a==='cardprint'){const m=S.members.find(x=>x.id===S.cardM);if(m)Card.print(m,cardOpt(m));return true}
  if(a==='cardpdf'){const m=S.members.find(x=>x.id===S.cardM);if(m){Card.download(Card.pdf(m,cardOpt(m)),'Kartu-'+m.code+'.pdf');log('kartu_pdf',m.code)}return true}
- if(a==='cardwa'){const m=S.members.find(x=>x.id===S.cardM);if(!m||!canWa())return true;
+ if(a==='cardwa'){const m=S.members.find(x=>x.id===S.cardM);if(!m||!canCW())return true;
   const txt=fillTpl(tplBy('Selamat Datang').body,m)+'\n\nKartu member Anda terlampir (kode '+m.code+'). Tunjukkan QR saat check-in.';
   Card.share(m,cardOpt(m),txt,'https://wa.me/'+waNum(m.phone)+'?text='+encodeURIComponent(txt)).then(r=>{log('kartu_wa',m.code);if(r==='download')toast('PDF diunduh. Lampirkan ke chat WhatsApp yang terbuka.');});return true}
  if(a==='wasend'){const m=S.members.find(x=>x.id===v),t=S.tpl.find(x=>x.id===D.t)||S.tpl[0];if(!m||!canWa()||!t)return true;
@@ -241,7 +242,7 @@ function posPay(){
 
 /* ---------- WhatsApp otomatis saat member baru ---------- */
 function autoSend(m){
- if(!autoOn()||!canWa()||!m||!m.phone)return false;
+ if(!autoOn()||!canCW()||!m||!m.phone)return false;
  const tp=tplBy('Selamat Datang');markSent('w|'+m.id,m.id);log('wa_otomatis',m.code);
  if(!isDaily(m.pkg)){
   const txt=fillTpl(tp.body,m)+'\n\nKartu member Anda terlampir (kode '+m.code+').';
