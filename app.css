@@ -135,3 +135,5 @@ th.ck,td.ck{width:36px}.ck input{width:20px;height:20px;min-height:0;accent-colo
 /* struk */
 #printrc{display:none}
 @media print{#printrc{display:block!important;color:#000;background:#fff}#printrc pre{margin:0;padding:1.5mm 2mm;font:11px/1.25 'Courier New',monospace;white-space:pre}}
+#upd{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;align-items:center;gap:10px;background:var(--ink);color:var(--surface);padding:10px 14px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.3);max-width:calc(100vw - 24px)}
+#upd .btn.ghost{background:transparent;color:inherit;border:1px solid currentColor}

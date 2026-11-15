@@ -6,11 +6,12 @@ const SST={plan:['Terjadwal','b-info'],done:['Selesai','b-ok'],cancel:['Batal','
 const pym=()=>S.pym||ymNow();
 
 /* ---- perhitungan gaji ---- */
+function adjOf(key,ym){const list=(S.padj||[]).filter(a=>a.key===key&&a.ym===ym);return{list,bonus:list.filter(a=>a.amt>0).reduce((x,a)=>x+a.amt,0),cut:-list.filter(a=>a.amt<0).reduce((x,a)=>x+a.amt,0)}}
 function slipT(t,ym){const sess=S.tsess.filter(s=>s.tid===t.id&&s.status==='done'&&s.date.startsWith(ym)).sort((a,b)=>(a.date+a.time)<(b.date+b.time)?-1:1);
- const omzet=sess.reduce((a,s)=>a+(+s.price||0),0),pct=+t.pct||0,com=Math.round(omzet*pct/100),base=+t.base||0;
- return{kind:'trainer',id:t.id,name:t.name,phone:t.phone||'',role:'Trainer',base,pct,count:sess.length,omzet,com,total:base+com,sess,on:t.on}}
-function slipK(u,ym){const n=S.tx.filter(x=>x.by===u.id&&!x.voided&&x.date.startsWith(ym)).length,base=+u.base||0;
- return{kind:'kasir',id:u.id,name:u.name,phone:u.phone||'',role:'Kasir',base,pct:0,count:n,omzet:0,com:0,total:base,sess:[],on:u.on}}
+ const omzet=sess.reduce((a,s)=>a+(+s.price||0),0),pct=+t.pct||0,com=Math.round(omzet*pct/100),base=+t.base||0,aj=adjOf('trainer:'+t.id,ym);
+ return{kind:'trainer',id:t.id,name:t.name,phone:t.phone||'',role:'Trainer',base,pct,count:sess.length,omzet,com,adj:aj.list,bonus:aj.bonus,cut:aj.cut,total:base+com+aj.bonus-aj.cut,sess,on:t.on}}
+function slipK(u,ym){const aj=adjOf('kasir:'+u.id,ym),n=S.tx.filter(x=>x.by===u.id&&!x.voided&&x.date.startsWith(ym)).length,base=+u.base||0;
+ return{kind:'kasir',id:u.id,name:u.name,phone:u.phone||'',role:'Kasir',base,pct:0,count:n,omzet:0,com:0,adj:aj.list,bonus:aj.bonus,cut:aj.cut,total:base+aj.bonus-aj.cut,sess:[],on:u.on}}
 function payees(ym){const o=[];
  S.trainers.forEach(t=>{const sl=slipT(t,ym);if(t.on||sl.count)o.push(sl)});
  S.users.filter(u=>u.role==='kasir'&&(u.on||u.base)).forEach(u=>o.push(slipK(u,ym)));return o}
@@ -25,6 +26,7 @@ function slipLines(s,ym){const L=[],a=(t,b,sz)=>L.push({t,b:!!b,s:sz}),R=(x)=>'R
  a(lrp('Gaji pokok',R(s.base)));
  if(s.kind==='trainer'){a(lrp('Sesi selesai',s.count+' sesi'));a(lrp('Omzet sesi',R(s.omzet)));a(lrp('Komisi '+s.pct+'%',R(s.com)))}
  else a(lrp('Transaksi diproses (info)',s.count+' transaksi'));
+ (s.adj||[]).forEach(x=>a(lrp((x.amt>0?'Bonus: ':'Potongan: ')+x.label.slice(0,36),(x.amt>0?'+ ':'- ')+R(Math.abs(x.amt)))));
  a('-'.repeat(PW));a(lrp('TOTAL DITERIMA',R(s.total)),1,11);a('-'.repeat(PW));
  if(s.kind==='trainer'&&s.sess.length){a('');a('Rincian sesi selesai',1);s.sess.forEach(x=>{const m=x.mid?S.members.find(y=>y.id===x.mid):null;a(lrp(x.date.slice(8)+'/'+x.date.slice(5,7)+' '+(x.time||'')+' '+(m?asc(m.name).slice(0,28):'Umum'),fnum(x.price||0)))})}
  a('');a('Dicetak '+T0+' '+hhmm(),0,8);return L}
@@ -65,7 +67,7 @@ P.tsessions=()=>{const ym=pym(),rows=sessRows(),act=S.trainers.filter(t=>t.on);
 P.payroll=()=>{const ym=pym(),P_=payees(ym),tot=P_.reduce((a,s)=>a+s.total,0);
  return`<div class="tb"><input type="month" data-ch="pym" value="${ym}" aria-label="Bulan"><button class="btn ghost" data-a="payall" data-v="print">${ico('print')} Cetak rekap</button><button class="btn ghost" data-a="payall" data-v="pdf">Rekap PDF</button></div>
  <div class="note">Trainer: gaji pokok + persentase dari omzet sesi yang berstatus <b>Selesai</b>. Kasir: gaji pokok saja. Atur angka lewat tombol <b>Atur gaji</b>.</div>
- <div class="card"><h2>Gaji ${ymLbl(ym)}</h2>${tbl(['Nama','Jabatan','>Sesi/Trx','>Gaji pokok','>Komisi','>Total',''],P_.map(s=>`<tr><td>${esc(s.name)}${s.on?'':' '+badge(['Nonaktif','b-gray'])}</td><td>${s.role}</td><td class="r">${s.count}</td><td class="r">${rp(s.base)}</td><td class="r">${s.kind==='trainer'?rp(s.com)+' <small class="mut">('+s.pct+'%)</small>':'-'}</td><td class="r"><b>${rp(s.total)}</b></td><td><span class="pill" style="flex-wrap:wrap"><button class="btn sm" data-a="paycfg" data-v="${s.kind}:${s.id}">Atur gaji</button><button class="btn sm ghost" data-a="payprint" data-v="${s.kind}:${s.id}">Cetak</button><button class="btn sm ghost" data-a="paypdf" data-v="${s.kind}:${s.id}">PDF</button><button class="btn sm ghost" data-a="paywa" data-v="${s.kind}:${s.id}">WhatsApp</button></span></td></tr>`),'Belum ada trainer atau kasir.')}
+ <div class="card"><h2>Gaji ${ymLbl(ym)}</h2>${tbl(['Nama','Jabatan','>Sesi/Trx','>Gaji pokok','>Komisi','>Bonus/Potongan','>Total',''],P_.map(s=>`<tr><td>${esc(s.name)}${s.on?'':' '+badge(['Nonaktif','b-gray'])}</td><td>${s.role}</td><td class="r">${s.count}</td><td class="r">${rp(s.base)}</td><td class="r">${s.kind==='trainer'?rp(s.com)+' <small class="mut">('+s.pct+'%)</small>':'-'}</td><td class="r">${s.bonus-s.cut?(s.bonus-s.cut>0?'+':'-')+rp(Math.abs(s.bonus-s.cut)):'-'}</td><td class="r"><b>${rp(s.total)}</b></td><td><span class="pill" style="flex-wrap:wrap"><button class="btn sm" data-a="paycfg" data-v="${s.kind}:${s.id}">Atur gaji</button><button class="btn sm ghost" data-a="payadj" data-v="${s.kind}:${s.id}">Bonus/Potongan</button><button class="btn sm ghost" data-a="payprint" data-v="${s.kind}:${s.id}">Cetak</button><button class="btn sm ghost" data-a="paypdf" data-v="${s.kind}:${s.id}">PDF</button><button class="btn sm ghost" data-a="paywa" data-v="${s.kind}:${s.id}">WhatsApp</button></span></td></tr>`),'Belum ada trainer atau kasir.')}
  <p style="text-align:right;margin:10px 0 0">Total gaji: <b style="font:700 20px var(--f-head)">${rp(tot)}</b></p></div>`};
 
 /* ---- aksi ---- */

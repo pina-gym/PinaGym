@@ -16,6 +16,7 @@ Aplikasi manajemen gym dengan dashboard dan menu yang berbeda untuk tiap role (A
 - **Cetak struk** ke printer Bluetooth/USB/Serial (ESC/POS) atau browser, kertas 57/58/80 mm, default di Pengaturan.
 - **Trainer**: pendaftaran, sesi (diatur admin), gaji trainer (pokok + persen) dan kasir (pokok), slip cetak/PDF/WhatsApp.
 - **Export Excel** riwayat transaksi harian/mingguan/bulanan/rentang bebas.
+- **Promo & voucher** (persen/rupiah, minimal belanja, masa berlaku, kuota) dan diskon manual di POS; **stok opname** dengan stok minimum dan riwayat; **bonus/potongan** di slip gaji; **WhatsApp massal** tanpa gateway (Daftar Siaran via kontak .vcf, atau kirim berurutan); banner "versi baru tersedia".
 - Laporan, dashboard TV, activity log, pengaturan, backup dan pulihkan data (JSON).
 - Login dengan password ter-hash (PBKDF2), session timeout yang dapat diatur, batas percobaan login.
 
@@ -40,7 +41,7 @@ python3 -m http.server 8080
 Service worker dan hash password butuh `https://` atau `localhost`.
 
 ## Struktur
-- `index.html`, `app.css`, `app.js`, `ui.js`: aplikasi; `sync.js`: backup Supabase; `ext.js`: konfirmasi, pilih banyak, backup; `card.js`, `qr.js`: kartu member; `scan.js`: scanner; `print.js`: printer struk; `pay.js`: trainer dan gaji; `xlsx.js`: export Excel
+- `index.html`, `app.css`, `app.js`, `ui.js`: aplikasi; `sync.js`: backup Supabase; `ext.js`: konfirmasi, pilih banyak, backup; `card.js`, `qr.js`: kartu member; `scan.js`: scanner; `print.js`: printer struk; `pay.js`: trainer dan gaji; `xlsx.js`: export Excel; `extra.js`: promo, opname, WhatsApp massal
 - `manifest.webmanifest`, `sw.js`, `icons/`: PWA dan mode offline
 - `supabase/`: `backup.sql` (tabel backup) dan panduan; `legacy-schema.sql` = skema sinkron lama (tidak dipakai lagi)
 - `php/`: versi PHP + SQLite untuk XAMPP (validasi izin di server). Lihat `php/README.md`.

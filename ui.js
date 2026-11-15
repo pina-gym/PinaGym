@@ -54,7 +54,7 @@ P.packages=()=>{const mg=can('package.manage');return`${mg?`<form class="card fo
  <div class="card">${selBar('packages',PKG.map(p=>p.id),mg)}${tbl([...(mg?[selTh('packages',PKG.map(p=>p.id))]:[]),'Paket','Durasi','>Harga','Status',''],PKG.map(p=>`<tr>${mg?selTd('packages',p.id):''}<td>${esc(p.name)}</td><td>${p.days} hari</td><td class="r">${rp(p.price)}</td><td>${badge(p.on?['Aktif','b-ok']:['Nonaktif','b-gray'])}</td><td>${mg?`<span class="pill" style="flex-wrap:wrap;min-width:150px"><button class="btn sm" data-a="editpkg" data-v="${p.id}">Ubah harga</button><button class="btn sm ghost" data-a="pkgtoggle" data-v="${p.id}">${p.on?'Nonaktifkan':'Aktifkan'}</button>${cfl('dp'+p.id,'delpkg',p.id)}</span>`:''}</td></tr>`))}</div>`};
 
 /* ---------- produk ---------- */
-P.products=()=>{const mg=can('product.manage'),cs=can('product.cost');return`${mg?`<form class="card form wide" data-f="addprod"><h2>Tambah produk</h2>${fld('Nama produk','name','','text','required')}${fld('Harga jual (Rp)','price','','number','min="0" required')}${cs?fld('Harga modal (Rp)','cost','0','number','min="0"'):''}${fld('Stok awal','stock','0','number','required')}<button class="btn">Tambah Produk</button></form>`:'<p class="mut">Mode hanya-lihat.</p>'}
+P.products=()=>{const mg=can('product.manage'),cs=can('product.cost');return`${mg?`<form class="card form wide" data-f="addprod"><h2>Tambah produk</h2>${fld('Nama produk','name','','text','required')}${fld('Harga jual (Rp)','price','','number','min="0" required')}${cs?fld('Harga modal (Rp)','cost','0','number','min="0"'):''}${fld('Stok awal','stock','0','number','required')}${fld('Stok minimum (peringatan)','min','10','number','min="0"')}<button class="btn">Tambah Produk</button></form>`:'<p class="mut">Mode hanya-lihat.</p>'}
  <div class="card">${selBar('products',S.products.map(p=>p.id),mg)}${tbl([...(mg?[selTh('products',S.products.map(p=>p.id))]:[]),'Produk','>Harga',...(cs?['>Modal']:[]),'>Stok',...(mg?['']:[])],S.products.map(p=>`<tr>${mg?selTd('products',p.id):''}<td>${esc(p.name)}</td><td class="r">${rp(p.price)}</td>${cs?`<td class="r">${rp(p.cost||0)}</td>`:''}<td class="r">${p.stock}</td>${mg?`<td><span class="pill" style="flex-wrap:wrap;min-width:150px"><button class="btn sm" data-a="editprod" data-v="${p.id}">Ubah</button>${cfl('dd'+p.id,'delprod',p.id)}</span></td>`:''}</tr>`))}</div>`};
 
 /* ---------- user ---------- */
@@ -98,7 +98,7 @@ function extraClick(a,v,el){
  if(a==='delmember'){if(!can('member.delete'))return true;if(!ask('dm'+v,'Hapus member ini? Data kunjungan tetap tersimpan.'))return true;const i=S.members.findIndex(x=>x.id===v);if(i>=0){log('member_hapus',S.members[i].code);S.members.splice(i,1)}toast('Member dihapus.');render();return true}
  /* produk */
  if(a==='editprod'){if(!can('product.manage'))return true;const p=S.products.find(x=>x.id===v);if(!p)return true;
-  fm('Ubah produk','editprod',v,fld('Nama','name',p.name,'text','required')+fld('Harga jual (Rp)','price',p.price,'number','min="0" required')+(can('product.cost')?fld('Harga modal (Rp)','cost',p.cost||0,'number','min="0"'):'')+fld('Stok','stock',p.stock,'number','required'));return true}
+  fm('Ubah produk','editprod',v,fld('Nama','name',p.name,'text','required')+fld('Harga jual (Rp)','price',p.price,'number','min="0" required')+(can('product.cost')?fld('Harga modal (Rp)','cost',p.cost||0,'number','min="0"'):'')+fld('Stok','stock',p.stock,'number','required')+fld('Stok minimum (peringatan)','min',p.min==null?10:p.min,'number','min="0"'));return true}
  if(a==='delprod'){if(!can('product.manage'))return true;if(!ask('dd'+v,'Hapus produk ini?'))return true;const i=S.products.findIndex(x=>x.id===v);if(i>=0){log('produk_hapus',S.products[i].name);S.products.splice(i,1);delete S.cart[v]}toast('Produk dihapus.');render();return true}
  /* paket */
  if(a==='editpkg'){if(!can('package.manage'))return true;const p=PKG.find(x=>x.id===v);if(!p)return true;
@@ -127,9 +127,9 @@ function extraClick(a,v,el){
 /* ---------- aksi form ---------- */
 function extraSubmit(k,d,f){
  const id=f.dataset.id;
- if(k==='addprod'){if(!can('product.manage'))return true;const n=String(d.name).trim();if(!n)return true;S.products.push({id:uid(),name:n,price:+d.price||0,cost:+d.cost||0,stock:parseInt(d.stock,10)||0,se:1});log('produk_tambah',n);render();toast('Produk ditambahkan.');return true}
+ if(k==='addprod'){if(!can('product.manage'))return true;const n=String(d.name).trim();if(!n)return true;S.products.push({id:uid(),name:n,price:+d.price||0,cost:+d.cost||0,stock:parseInt(d.stock,10)||0,min:Math.max(0,parseInt(d.min,10)||0),se:1});log('produk_tambah',n);render();toast('Produk ditambahkan.');return true}
  if(k==='editprod'){if(!can('product.manage'))return true;const p=S.products.find(x=>x.id===id);if(!p)return true;const st=parseInt(d.stock,10)||0;
-  if(st!==p.stock)p.se=1;p.name=String(d.name).trim()||p.name;p.price=+d.price||0;if('cost'in d)p.cost=+d.cost||0;p.stock=st;log('produk_ubah',p.name);modal('');render();toast('Produk disimpan.');return true}
+  if(st!==p.stock)p.se=1;if('min'in d)p.min=Math.max(0,parseInt(d.min,10)||0);p.name=String(d.name).trim()||p.name;p.price=+d.price||0;if('cost'in d)p.cost=+d.cost||0;p.stock=st;log('produk_ubah',p.name);modal('');render();toast('Produk disimpan.');return true}
  if(k==='addpkg'){if(!can('package.manage'))return true;const n=String(d.name).trim();if(!n)return true;PKG.push({id:uid(),name:n,days:Math.max(1,parseInt(d.days,10)||1),price:+d.price||0,on:1});log('paket_tambah',n);render();toast('Paket ditambahkan.');return true}
  if(k==='editpkg'){if(!can('package.manage'))return true;const p=PKG.find(x=>x.id===id);if(!p)return true;p.name=String(d.name).trim()||p.name;p.days=Math.max(1,parseInt(d.days,10)||1);p.price=+d.price||0;log('paket_ubah',p.name);modal('');render();toast('Paket disimpan.');return true}
  if(k==='editmember'){if(!can('member.edit'))return true;const m=S.members.find(x=>x.id===id);if(!m)return true;m.name=String(d.name).trim()||m.name;if('phone'in d)m.phone=String(d.phone).trim();log('member_ubah',m.code);modal('');render();toast('Data member disimpan.');return true}
@@ -193,7 +193,8 @@ document.addEventListener('input',e=>{const t=e.target;
 /* ---------- kasir: member harian, paket, dan produk dalam satu struk ---------- */
 const isDaily=pk=>{const p=typeof pk==='string'?PKG.find(x=>x.id===pk):pk;return!!p&&p.days<=1};
 const posPkg=()=>S.ppk?PKG.find(x=>x.id===S.ppk&&x.on):null;
-const posTotal=()=>cartTotal()+(posPkg()?posPkg().price:0);
+const posGross=()=>cartTotal()+(posPkg()?posPkg().price:0);
+const posTotal=()=>Math.max(0,posGross()-(typeof discCalc==='function'?discCalc().amt:0));
 function posResults(){const q=String(S.pq||'').trim().toLowerCase();if(q.length<2)return'<span class="mut">Ketik minimal 2 huruf nama atau kode member.</span>';
  const r=S.members.filter(m=>m.name.toLowerCase().includes(q)||m.code.toLowerCase().includes(q)).slice(0,6);
  return r.length?r.map(m=>`<button class="btn sm ghost" data-a="pmset" data-v="${m.id}">${esc(m.name)} · ${m.code}</button>`).join(' '):'<span class="mut">Tidak ditemukan.</span>'}
@@ -221,6 +222,7 @@ function posPay(){
  if(pk&&nm&&!can('member.create')){toast('Role Anda tidak boleh mendaftarkan member.');return}
  if(pk&&S.pmem&&!can('member.extend')){toast('Role Anda tidak boleh memperpanjang membership.');return}
  if(items.some(i=>i.q>i.p.stock)){toast('Stok tidak cukup.');return}
+ const dc=discCalc();if(dc.err){toast(dc.err);return}
  const grp=uid(),txs=[];let mem=S.pmem?S.members.find(x=>x.id===S.pmem):null,isNew=false;
  if(pk){
   if(nm){const t=newMember(nm,String(S.pnew.phone||'').trim(),pk.id,method);t.grp=grp;txs.push(t);mem=S.members.find(x=>x.id===t.mid);isNew=true}
@@ -228,7 +230,8 @@ function posPay(){
    const t=addTx('membership',S.user.id,method,pk.price,[{name:'Perpanjangan '+pk.name,qty:1,price:pk.price,cost:0}],{mid:mem.id,pk:pk.id});t.grp=grp;txs.push(t);log('member_perpanjang',mem.code)}}
  if(items.length){items.forEach(i=>i.p.stock-=i.q);
   const t=addTx('pos',S.user.id,method,items.reduce((s,i)=>s+i.p.price*i.q,0),items.map(i=>({name:i.p.name,qty:i.q,price:i.p.price,cost:i.p.cost,pid:i.p.id})),mem?{mid:mem.id}:{});t.grp=grp;txs.push(t);log('pos_checkout',t.inv)}
- S.cart={};S.pmem=null;S.pnew=null;S.ppk='';S.pq='';
+ if(dc.amt>0){let rem=dc.amt;[...txs].reverse().forEach(t=>{const d=Math.min(rem,t.total);if(d>0){t.items.push({name:'Diskon'+(dc.label?' '+dc.label:''),qty:1,price:-d,cost:0});t.total-=d;t.disc=d;rem-=d}});if(dc.promo)dc.promo.used=(dc.promo.used||0)+1;log('pos_diskon',(dc.label||'manual')+' '+dc.amt)}
+ S.cart={};S.pmem=null;S.pnew=null;S.ppk='';S.pq='';S.pv='';S.pdm=null;
  render();receipt(txs[0]);if(mem)afterReg(mem.id);
  if(isNew&&autoSend(mem))toast('Membuka WhatsApp…')}
 {const _rc=receipt;
