@@ -86,8 +86,8 @@ function extraClick(a,v,el){
  if(a==='cardprint'){const m=S.members.find(x=>x.id===S.cardM);if(m)Card.print(m,cardOpt(m));return true}
  if(a==='cardpdf'){const m=S.members.find(x=>x.id===S.cardM);if(m){Card.download(Card.pdf(m,cardOpt(m)),'Kartu-'+m.code+'.pdf');log('kartu_pdf',m.code)}return true}
  if(a==='cardwa'){const m=S.members.find(x=>x.id===S.cardM);if(!m||!canWa())return true;
-  const txt='Halo '+m.name+', berikut kartu member Anda di '+S.settings.gym_name+' (kode '+m.code+'). Tunjukkan QR saat check-in.';
-  Card.share(m,cardOpt(m),txt,'https://wa.me/'+waNum(m.phone)+'?text='+encodeURIComponent(txt+' (PDF kartu terlampir)')).then(r=>{log('kartu_wa',m.code);if(r==='download')toast('PDF diunduh. Lampirkan ke chat WhatsApp yang terbuka.');});return true}
+  const txt=fillTpl(tplBy('Selamat Datang').body,m)+'\n\nKartu member Anda terlampir (kode '+m.code+'). Tunjukkan QR saat check-in.';
+  Card.share(m,cardOpt(m),txt,'https://wa.me/'+waNum(m.phone)+'?text='+encodeURIComponent(txt)).then(r=>{log('kartu_wa',m.code);if(r==='download')toast('PDF diunduh. Lampirkan ke chat WhatsApp yang terbuka.');});return true}
  if(a==='wasend'){const m=S.members.find(x=>x.id===v),t=S.tpl.find(x=>x.id===D.t)||S.tpl[0];if(!m||!canWa()||!t)return true;
   if(!openWa(waLink(m,t.body)))toast('Nomor HP member kosong.');else log('wa_kirim',m.code);return true}
  if(a==='wawelcome'){const m=S.members.find(x=>x.id===v);if(!m||!canWa())return true;

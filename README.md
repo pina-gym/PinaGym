@@ -22,6 +22,7 @@ Aplikasi manajemen gym dengan dashboard dan menu yang berbeda untuk tiap role (A
 - **POS sekali ketuk**: produk dan paket membership tampil sebagai tile; ketuk untuk menambah, keranjang ringkas dengan tombol +/−, tombol **Bayar** mengambang (di HP muncul di atas menu bawah).
 - **Paket member + trainer**: paket bisa ditandai "termasuk trainer". Saat daftar/perpanjang (menu atau POS) kasir/admin memilih trainer dari daftar; member otomatis masuk ke trainer itu dan tiap check-in tercatat sebagai satu sesi (dasar komisi persentase).
 - **Logo gym**: unggah di Pengaturan Gym. Tampil di struk (layar, browser, thermal), kartu member (SVG/PDF), slip & rekap gaji (PDF/cetak), menu samping, login, dan layar TV. Ikut tercadang. Ekspor Excel tidak memuat gambar.
+- **Cetak kartu masal**: menu Cetak Kartu Masal, pilih beberapa/semua member, cetak langsung atau Simpan PDF A4 (10 kartu per lembar, garis potong). Tombol WA Kartu mengirim template Selamat Datang + PDF kartu.
 - **Kamera check-in** di tablet bisa digeser dan diperkecil. Daftar member punya tombol **WA Kartu**.
 
 ## Pakai

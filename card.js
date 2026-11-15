@@ -22,9 +22,10 @@ function svg(m,o){ // o: {gym,pkg,end,status}
 <text x="300" y="400" font-family="Arial,Helvetica,sans-serif" font-size="22" fill="#94a3b8">BERLAKU S/D</text><text x="300" y="432" font-family="Arial,Helvetica,sans-serif" font-size="30" fill="#fff">${xe(o.end)}</text>
 <rect x="${qx}" y="${qy}" width="${qs}" height="${qs}" rx="12" fill="#fff"/><path d="${mods}" fill="#0f172a"/>${LOGO()?`<rect x="${LB.x}" y="${LB.y}" width="${LB.s}" height="${LB.s}" rx="16" fill="#fff"/><image href="${LOGO()}" x="${LB.x+8}" y="${LB.y+8}" width="${LB.s-16}" height="${LB.s-16}" preserveAspectRatio="xMidYMid meet"/>`:''}</svg>`}
 
-/* PDF satu halaman 85,6 x 54 mm. Font bawaan PDF (Helvetica). */
-function pdf(m,o){
- const k=72/25.4,pw=85.6*k,ph=54*k,s=pw/W; // skala piksel -> poin
+/* isi halaman kartu (satuan poin, titik asal kiri-bawah kartu 85,6 x 54 mm) */
+const PK=72/25.4,CPW=85.6*PK,CPH=54*PK;
+function pcontent(m,o){
+ const pw=CPW,ph=CPH,s=pw/W;
  const X=x=>(x*s).toFixed(2),Y=y=>((H-y)*s).toFixed(2),L=v=>(v*s).toFixed(2);
  const q=QR.matrix(m.code,'M'),n=q.length,cell=Math.floor(250/(n+2)),qs=cell*(n+2),qx=W-qs-56,qy=H-qs-56;
  let c='';
@@ -38,14 +39,34 @@ function pdf(m,o){
  const lg=LOGO()?jpg(LOGO()):null;
  if(lg){const bs=LB.s-16,f=Math.min(bs/lg.w,bs/lg.h),dw=lg.w*f,dh=lg.h*f,cx=LB.x+LB.s/2,cy=LB.y+LB.s/2;
   c+=`1 1 1 rg ${X(LB.x)} ${Y(LB.y+LB.s)} ${L(LB.s)} ${L(LB.s)} re f\nq ${L(dw)} 0 0 ${L(dh)} ${X(cx-dw/2)} ${Y(cy+dh/2)} cm /Im0 Do Q\n`}
- const objs=['<</Type/Catalog/Pages 2 0 R>>','<</Type/Pages/Kids[3 0 R]/Count 1>>',
-  `<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${pw.toFixed(2)} ${ph.toFixed(2)}]/Contents 4 0 R/Resources<</Font<</F1 5 0 R/F2 6 0 R>>${lg?'/XObject<</Im0 7 0 R>>':''}>>>>`,
-  `<</Length ${c.length}>>\nstream\n${c}endstream`,'<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>','<</Type/Font/Subtype/Type1/BaseFont/Helvetica-Bold>>'];
- if(lg)objs.push(`<</Type/XObject/Subtype/Image/Width ${lg.w}/Height ${lg.h}/ColorSpace/${lg.c===1?'DeviceGray':'DeviceRGB'}/BitsPerComponent 8/Filter/DCTDecode/Length ${lg.bin.length}>>\nstream\n${lg.bin}\nendstream`);
- let out='%PDF-1.4\n',off=[];objs.forEach((b,i)=>{off.push(out.length);out+=`${i+1} 0 obj\n${b}\nendobj\n`});
+ return{c,lg}}
+function mkpdf(objs){let out='%PDF-1.4\n',off=[];objs.forEach((b,i)=>{off.push(out.length);out+=`${i+1} 0 obj\n${b}\nendobj\n`});
  const xr=out.length;out+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`+off.map(x=>String(x).padStart(10,'0')+' 00000 n \n').join('')+`trailer\n<</Size ${objs.length+1}/Root 1 0 R>>\nstartxref\n${xr}\n%%EOF`;
- const u=new Uint8Array(out.length);for(let i=0;i<out.length;i++)u[i]=out.charCodeAt(i)&255;
- return new Blob([u],{type:'application/pdf'})}
+ const u=new Uint8Array(out.length);for(let i=0;i<out.length;i++)u[i]=out.charCodeAt(i)&255;return new Blob([u],{type:'application/pdf'})}
+const imgObj=lg=>`<</Type/XObject/Subtype/Image/Width ${lg.w}/Height ${lg.h}/ColorSpace/${lg.c===1?'DeviceGray':'DeviceRGB'}/BitsPerComponent 8/Filter/DCTDecode/Length ${lg.bin.length}>>\nstream\n${lg.bin}\nendstream`;
+const fonts='<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>',fontb='<</Type/Font/Subtype/Type1/BaseFont/Helvetica-Bold>>';
+
+/* PDF satu halaman 85,6 x 54 mm. Font bawaan PDF (Helvetica). */
+function pdf(m,o){
+ const{c,lg}=pcontent(m,o);
+ const objs=['<</Type/Catalog/Pages 2 0 R>>','<</Type/Pages/Kids[3 0 R]/Count 1>>',
+  `<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${CPW.toFixed(2)} ${CPH.toFixed(2)}]/Contents 4 0 R/Resources<</Font<</F1 5 0 R/F2 6 0 R>>${lg?'/XObject<</Im0 7 0 R>>':''}>>>>`,
+  `<</Length ${c.length}>>\nstream\n${c}endstream`,fonts,fontb];
+ if(lg)objs.push(imgObj(lg));
+ return mkpdf(objs)}
+
+/* PDF A4: banyak kartu per lembar (2 kolom x 5 baris = 10 kartu), garis potong putus-putus */
+const SHEET={cols:2,rows:5,mx:17.4,my:7.5,gx:4,gy:3,per:10};
+function sheetPdf(list){ // list: [{m,o}]
+ const pw=595.28,ph=841.89,pages=[];let lg=null;
+ for(let i=0;i<list.length;i+=SHEET.per){let c='';
+  list.slice(i,i+SHEET.per).forEach((it,j)=>{const col=j%SHEET.cols,row=Math.floor(j/SHEET.cols),x=(SHEET.mx+col*(85.6+SHEET.gx))*PK,y=ph-(SHEET.my+row*(54+SHEET.gy)+54)*PK,r=pcontent(it.m,it.o);lg=lg||r.lg;
+   c+=`q 1 0 0 1 ${x.toFixed(2)} ${y.toFixed(2)} cm\n${r.c}Q\n0.6 G 0.4 w [2 2] 0 d ${x.toFixed(2)} ${y.toFixed(2)} ${CPW.toFixed(2)} ${CPH.toFixed(2)} re S [] 0 d\n`});
+  pages.push(c)}
+ const objs=['<</Type/Catalog/Pages 2 0 R>>',null,fonts,fontb];if(lg)objs.push(imgObj(lg));
+ const kids=[];pages.forEach(c=>{const pi=objs.length+1;kids.push(pi+' 0 R');objs.push(`<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${pw} ${ph}]/Contents ${pi+1} 0 R/Resources<</Font<</F1 3 0 R/F2 4 0 R>>${lg?'/XObject<</Im0 5 0 R>>':''}>>>>`);objs.push(`<</Length ${c.length}>>\nstream\n${c}endstream`)});
+ objs[1]=`<</Type/Pages/Kids[${kids.join(' ')}]/Count ${pages.length}>>`;
+ return mkpdf(objs)}
 
 function print(m,o){
  const d=document.createElement('div');d.id='printcard';d.innerHTML=svg(m,o);document.body.appendChild(d);
@@ -61,4 +82,4 @@ async function share(m,o,text,waUrl){
  catch(e){if(e&&e.name==='AbortError')return'cancel'}
  download(b,name);if(waUrl)window.open(waUrl,'_blank','noopener');return'download'}
 
-return{svg,pdf,print,download,share,jpg}})();
+return{svg,pdf,sheetPdf,print,download,share,jpg,SHEET}})();
