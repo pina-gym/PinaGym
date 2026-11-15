@@ -1,6 +1,6 @@
-/* PinaGym service worker: cache-first untuk berkas aplikasi, jadi bisa dibuka tanpa internet.
+/* PinaGym service worker: network-first (terbaru saat online) dengan cadangan cache agar bisa dibuka tanpa internet.
    Naikkan VERSION setiap kali berkas aplikasi berubah agar pengguna mendapat versi baru. */
-const VERSION = 'pinagym-v12';
+const VERSION = 'pinagym-v13';
 const SHELL = ['./', 'index.html', 'app.css', 'qr.js', 'card.js', 'sync.js', 'app.js', 'ui.js', 'ext.js', 'scan.js', 'print.js', 'pay.js', 'xlsx.js', 'extra.js', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png', 'icons/favicon.svg'];
 
@@ -24,10 +24,24 @@ self.addEventListener('fetch', e => {
       .catch(() => caches.match('index.html')));
     return;
   }
-  // stale-while-revalidate
-  e.respondWith(caches.open(VERSION).then(async c => {
-    const hit = await c.match(req);
-    const net = fetch(req).then(r => { if (r && (r.ok || r.type === 'opaque')) c.put(req, r.clone()); return r; }).catch(() => hit);
-    return hit || net;
-  }));
+  if (isFont) { // font: stale-while-revalidate
+    e.respondWith(caches.open(VERSION).then(async c => {
+      const hit = await c.match(req);
+      const net = fetch(req).then(r => { if (r && (r.ok || r.type === 'opaque')) c.put(req, r.clone()); return r; }).catch(() => hit);
+      return hit || net;
+    }));
+    return;
+  }
+  // berkas aplikasi: selalu ambil yang terbaru saat online (hindari campuran versi lama/baru), cache hanya cadangan offline
+  e.respondWith((async () => {
+    const c = await caches.open(VERSION);
+    try {
+      const r = await Promise.race([fetch(req, { cache: 'no-cache' }), new Promise((_, j) => setTimeout(() => j(new Error('timeout')), 6000))]);
+      if (r && r.ok) c.put(req, r.clone());
+      return r;
+    } catch (err) {
+      const hit = await c.match(req);
+      return hit || fetch(req);
+    }
+  })());
 });
