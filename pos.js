@@ -13,28 +13,45 @@ function posCust(){const mem=S.pmem?S.members.find(x=>x.id===S.pmem):null,pk=pos
  const need=pk&&!mem&&!S.pnew,open=S.popen||need;
  const trs=pk&&pk.pt?`<label style="margin-top:10px">Trainer<select id="ptid"><option value="">${S.trainers.some(t=>t.on)?'Pilih trainer':'Belum ada trainer (daftarkan di menu Trainer)'}</option>${S.trainers.filter(t=>t.on||t.id===S.ptid).map(t=>`<option value="${t.id}"${t.id===S.ptid?' selected':''}>${esc(t.name)}</option>`).join('')}</select></label>`:'';
  if(mem)return`<div class="card pcu"><p class="pill" style="flex-wrap:wrap;margin:0"><b>${esc(mem.name)}</b> <span class="mut">${mem.code}</span> ${badge(mstat(mem))}<button class="btn sm ghost" data-a="pmclear">Lepas</button></p>${trs}</div>`;
- if(S.pnew)return`<div class="card pcu"><div class="form"><div class="pill" style="flex-wrap:wrap"><b>Member baru</b><button class="btn sm ghost" data-a="pnewtoggle">Batal</button></div><label>Nama<input id="pnn" value="${esc(S.pnew.name)}" placeholder="Nama pelanggan"></label><label>No. HP (WhatsApp)<input id="pnp" type="tel" value="${esc(S.pnew.phone)}" placeholder="08xxxxxxxxxx"></label></div>${trs}</div>`;
+ if(S.pnew)return`<div class="card pcu"><div class="form"><div class="pill" style="flex-wrap:wrap"><b>Member baru</b><button class="btn sm ghost" data-a="pnewtoggle">Batal</button></div><label>Nama<input id="pnn" value="${esc(S.pnew.name)}" placeholder="Nama pelanggan"></label><label>No. HP (WhatsApp)<input id="pnp" type="tel" value="${esc(S.pnew.phone)}" placeholder="08xxxxxxxxxx"></label><label>Alamat<textarea id="pna" rows="2" placeholder="Alamat member">${esc(S.pnew.addr||'')}</textarea></label></div>${trs}</div>`;
  if(!open)return`<div class="card pcu"><p class="pill" style="margin:0;justify-content:space-between"><span><span class="mut">Pelanggan:</span> <b>Umum</b></span><button class="btn sm ghost" data-a="pcust">Pilih member</button></p></div>`;
  const today=S.members.filter(m=>isDaily(m.pkg)&&m.end>=T0&&!m.freeze).slice(-6).reverse();
  return`<div class="card pcu">${need?'<div class="note">Paket membership butuh member. Cari member atau daftarkan baru.</div>':''}${today.length?`<p style="margin:0 0 8px"><span class="mut">Harian hari ini:</span> ${today.map(m=>`<button class="btn sm ghost" data-a="pmset" data-v="${m.id}">${esc(m.name)}</button>`).join(' ')}</p>`:''}<div class="tb" style="margin:0"><input id="pq" placeholder="Cari member (nama / kode)" value="${esc(S.pq||'')}" autocomplete="off">${o.canReg?'<button class="btn ghost" data-a="pnewtoggle">'+ico('plus')+' Member baru</button>':''}${need?'':'<button class="btn sm ghost" data-a="pcust">Tutup</button>'}</div><div id="pres" style="margin-top:6px">${posResults()}</div></div>`}
-P.pos=()=>{const pk=posPkg(),mem=S.pmem?S.members.find(x=>x.id===S.pmem):null;
- if(pk&&pk.pt&&!S.ptid&&mem&&mem.tid)S.ptid=mem.tid;
+const cartCount=()=>Object.values(S.cart).reduce((a,b)=>a+b,0)+(posPkg()?1:0);
+P.pos=()=>{const n=cartCount();
  const tab=S.ptab||'all',tabs=[['all','Semua'],['prod','Produk'],['pkg','Paket']];
  return`${S.shift?'':'<div class="note">Shift belum dibuka. Buka shift di menu Shift Kasir.</div>'}
+ ${S.pmem&&S.members.find(x=>x.id===S.pmem)?`<p class="note pill" style="margin:0 0 10px;flex-wrap:wrap"><span>Pelanggan: <b>${esc(S.members.find(x=>x.id===S.pmem).name)}</b> <span class="mut">${S.members.find(x=>x.id===S.pmem).code}</span></span><button class="btn sm ghost" data-a="pmclear">Lepas</button></p>`:''}
  <div class="ptb"><input id="pfq" type="search" placeholder="Cari produk atau paket" value="${esc(S.pf||'')}" autocomplete="off"><span class="seg">${tabs.map(t=>`<button type="button" class="${tab===t[0]?'on':''}" data-a="ptab" data-v="${t[0]}">${t[1]}</button>`).join('')}</span></div>
  <div id="ptiles" class="tiles">${posTiles()}</div>
- <div class="card"><h2>Keranjang</h2><div id="pcart">${posCart()}</div></div>
- ${posCust()}${discBox()}
  <div class="padgap"></div>
- <div class="paybar"><div><small class="mut">Total</small><br><b id="posTotal">${rp(posTotal())}</b></div><select id="pm" aria-label="Metode"><option value="cash"${S.pmeth==='noncash'?'':' selected'}>Tunai</option><option value="noncash"${S.pmeth==='noncash'?' selected':''}>Non-tunai</option></select>${can('pos.checkout')?'<button class="btn" data-a="pay">Bayar</button>':''}</div>`};
-const posRe=()=>{const y=scrollY;render();scrollTo(0,y)};
+ <div class="paybar"><div><small class="mut">${n?n+' item':'Keranjang kosong'}</small><br><b id="posTotal">${rp(posTotal())}</b></div><button class="btn" data-a="cartopen"${n?'':' disabled'}>${ico('cart')} Lihat pesanan</button></div>`};
+/* popup konfirmasi pesanan: keranjang, data member/trainer, diskon, metode, bayar */
+function cartHtml(){const pk=posPkg(),n=cartCount(),mem=S.pmem?S.members.find(x=>x.id===S.pmem):null;
+ if(pk&&pk.pt&&!S.ptid&&mem&&mem.tid)S.ptid=mem.tid;
+ return`<div class="cartm"><h2 style="margin:0 0 10px">Konfirmasi pesanan</h2>
+ <div class="card" style="margin-bottom:10px"><div id="pcart">${posCart()}</div></div>
+ ${pk?'<h3 style="margin:10px 0 6px;font-size:15px">Data member</h3>':'<h3 style="margin:10px 0 6px;font-size:15px">Pelanggan</h3>'}${posCust()}${discBox()}
+ <div class="cfoot"><div><small class="mut">Total</small><br><b id="posTotal2">${rp(posTotal())}</b></div><select id="pm" aria-label="Metode bayar"><option value="cash"${S.pmeth==='noncash'?'':' selected'}>Tunai</option><option value="noncash"${S.pmeth==='noncash'?' selected':''}>Non-tunai</option></select><button class="btn ghost" data-a="cartclose">Kembali</button>${can('pos.checkout')?`<button class="btn" data-a="pay"${n?'':' disabled'}>Bayar</button>`:''}</div></div>`}
+function cartRe(){const m=document.querySelector('#modal .modal'),y=m?m.scrollTop:0;modal(cartHtml());const m2=document.querySelector('#modal .modal');if(m2)m2.scrollTop=y}
+function cartOpen(){S.cartOpen=true;cartRe()}
+function cartShut(){S.cartOpen=false;modal('')}
+const posRe=()=>{const y=scrollY;render();scrollTo(0,y);if(S.cartOpen)cartRe()};
 {const _ec=extraClick;extraClick=function(a,v,el){
  if(a==='padd'){const p=S.products.find(x=>x.id===v);if(p&&(S.cart[v]||0)<p.stock){S.cart[v]=(S.cart[v]||0)+1;posRe()}else if(p)toast('Stok tidak cukup.');return true}
- if(a==='pdec'){S.cart[v]=Math.max(0,(S.cart[v]||0)-1);if(!S.cart[v])delete S.cart[v];posRe();return true}
- if(a==='ppick'){S.ppk=S.ppk===v?'':v;S.ptid='';if(S.ppk&&!S.pmem&&!S.pnew)S.popen=true;posRe();return true}
+ if(a==='pdec'){S.cart[v]=Math.max(0,(S.cart[v]||0)-1);if(!S.cart[v])delete S.cart[v];posRe();if(S.cartOpen&&!cartCount())cartShut();return true}
+ if(a==='ppick'){const was=S.ppk===v;S.ppk=was?'':v;S.ptid='';if(S.ppk&&!S.pmem&&!S.pnew)S.popen=true;posRe();if(S.ppk)cartOpen();else if(S.cartOpen&&!cartCount())cartShut();return true}
  if(a==='ptab'){S.ptab=v;posRe();return true}
- if(a==='pcust'){S.popen=!S.popen;posRe();return true}
- if(a==='pmset'||a==='pmclear'||a==='pnewtoggle'){const r=_ec.apply(this,arguments);S.ptid='';S.popen=false;return r}
- return _ec.apply(this,arguments)}}
+ if(a==='pcust'){S.popen=!S.popen;if(S.cartOpen)cartRe();return true}
+ if(a==='cartopen'){if(cartCount())cartOpen();return true}
+ if(a==='cartclose'){cartShut();return true}
+ if(a==='mclose'&&S.cartOpen){S.cartOpen=false}
+ if(a==='pay'){const r=_ec.apply(this,arguments);if(!document.querySelector('#modal .cartm'))S.cartOpen=false;return r}
+ const r=_ec.apply(this,arguments);
+ if(S.cartOpen&&document.querySelector('#modal .cartm')){if(a==='pmset'||a==='pmclear'||a==='pnewtoggle'){S.ptid=a==='pmset'&&S.ppk&&(S.members.find(x=>x.id===v)||{}).tid||'';S.popen=false}cartRe()}
+ return r}}
 document.addEventListener('input',e=>{const t=e.target;if(t.id==='pfq'){S.pf=t.value;const b=document.getElementById('ptiles');if(b)b.innerHTML=posTiles()}});
 document.addEventListener('change',e=>{const t=e.target;if(t.id==='ptid')S.ptid=t.value;else if(t.id==='pm')S.pmeth=t.value});
+
+/* segarkan popup pesanan bila data/halaman dirender ulang */
+{const _r=render;render=function(){_r.apply(this,arguments);if(S.cartOpen&&!S.user){S.cartOpen=false;modal('')}else if(S.cartOpen&&document.querySelector('#modal .cartm'))cartRe()}}

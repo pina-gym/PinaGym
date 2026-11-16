@@ -165,3 +165,10 @@ th.ck,td.ck{width:36px}.ck input{width:20px;height:20px;min-height:0;accent-colo
 /* cetak kartu A4 */
 #printrc.sheet{display:none}
 @media print{#printrc.sheet{display:block!important;background:#fff}#printrc.sheet .sh{width:210mm;height:297mm;padding:7.5mm 17.4mm;box-sizing:border-box;display:grid;grid-template-columns:repeat(2,85.6mm);grid-auto-rows:54mm;gap:3mm 4mm;page-break-after:always;break-after:page;align-content:start}#printrc.sheet .sh:last-child{page-break-after:auto;break-after:auto}#printrc.sheet .sc{width:85.6mm;height:54mm;outline:.2mm dashed #888}#printrc.sheet .mcard{width:85.6mm;height:54mm;border-radius:0;display:block;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+/* popup konfirmasi pesanan POS */
+#modal .modal:has(.cartm){width:min(560px,100%);max-height:92vh;overflow:auto;padding-bottom:0}
+.cartm .card{box-shadow:none;margin-bottom:10px}.cartm h3{color:var(--mut)}
+.cartm .cfoot{position:sticky;bottom:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border-top:1px solid var(--line);padding:12px 0;margin-top:6px}
+.cartm .cfoot>div{flex:1;min-width:90px}.cartm .cfoot b{font:700 20px var(--f-head)}.cartm .cfoot select{width:auto}
+body:has(#modal .cartm) .paybar{display:none}
+.cartm .cfoot .btn{flex:1}

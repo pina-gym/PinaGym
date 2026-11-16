@@ -102,7 +102,7 @@ const memFrom=t=>{const m=/GYM\d+/i.exec(String(t||''));return m?(S.members.find
  if(k==='edittrainer'){if(!can('trainer.manage'))return true;const t=S.trainers.find(x=>x.id===id);if(!t)return true;t.name=String(d.name).trim()||t.name;t.phone=String(d.phone||'').trim();t.base=Math.max(0,+d.base||0);t.pct=Math.min(100,Math.max(0,+d.pct||0));t.rate=Math.max(0,+d.rate||0);log('trainer_ubah',t.name);modal('');render();toast('Trainer disimpan.');return true}
  if(k==='addsess'){if(!can('trainer.manage'))return true;const t=S.trainers.find(x=>x.id===d.tid);if(!t){toast('Pilih trainer.');return true}
   if(d.mem&&!memFrom(d.mem)){toast('Member tidak ditemukan. Pilih dari daftar atau kosongkan.');return true}
-  S.tsess.push({id:uid(),date:d.date,time:d.time,tid:t.id,mid:memFrom(d.mem),price:d.price===''||d.price==null?(+t.rate||0):Math.max(0,+d.price||0),status:'plan',note:String(d.note||'').trim()});
+  S.tsess.push({id:uid(),date:d.date,time:d.time,tid:t.id,mid:memFrom(d.mem),price:d.price===''||d.price==null?(+t.rate||0):Math.max(0,+d.price||0),status:'done',src:'manual',note:String(d.note||'').trim()});
   log('sesi_tambah',t.name+' '+d.date);if(d.date.startsWith(ymNow())||true)S.pym=d.date.slice(0,7);render();toast('Sesi dijadwalkan.');return true}
  if(k==='editsess'){if(!can('trainer.manage'))return true;const s=S.tsess.find(x=>x.id===id);if(!s)return true;
   if(d.mem&&!memFrom(d.mem)){toast('Member tidak ditemukan.');return true}
