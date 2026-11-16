@@ -73,4 +73,4 @@ async function auto(){if(due()){const r=await backupNow('auto');if(!r.ok)st.err=
 setInterval(()=>{if(document.visibilityState==='visible')auto()},10*60*1000);
 addEventListener('online',()=>setTimeout(auto,1500));
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(auto,1000)});
-return{st,cfg:()=>cfg,hasCfg,live,setCfg,test,login,logout,backupNow,list,fetchData,remove,auto,due,autoOn,last:()=>bk,email:()=>ses&&ses.email,counts,cleanUrl,KEEP}})();
+return{req,st,cfg:()=>cfg,hasCfg,live,setCfg,test,login,logout,backupNow,list,fetchData,remove,auto,due,autoOn,last:()=>bk,email:()=>ses&&ses.email,counts,cleanUrl,KEEP}})();

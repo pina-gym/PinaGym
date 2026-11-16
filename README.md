@@ -24,6 +24,7 @@ Aplikasi manajemen gym dengan dashboard dan menu yang berbeda untuk tiap role (A
 - **Logo gym**: unggah di Pengaturan Gym. Tampil di struk (layar, browser, thermal), kartu member (SVG/PDF), slip & rekap gaji (PDF/cetak), menu samping, login, dan layar TV. Ikut tercadang. Ekspor Excel tidak memuat gambar.
 - **Cetak kartu masal**: menu Cetak Kartu Masal, pilih beberapa/semua member, cetak langsung atau Simpan PDF A4 (10 kartu per lembar, garis potong). Tombol WA Kartu mengirim template Selamat Datang + PDF kartu.
 - **Kamera check-in** di tablet bisa digeser dan diperkecil. Daftar member punya tombol **WA Kartu**.
+- **Sinkron antar perangkat**: laptop, HP dan tablet berbagi data lewat Supabase (tabel `sync_records`, jalankan `supabase/sync.sql` sekali). Otomatis saat dibuka, tiap 90 detik, beberapa detik setelah ada perubahan dan saat online lagi; juga ada tombol **Sinkron** di bilah atas dan di menu Backup Database. Per data, perubahan terakhir yang menang; hapus ikut tersinkron. Perangkat baru: hubungkan Supabase (akun backup yang sama) lalu pilih "Ambil data dari server". Batas: stok yang diubah di dua perangkat sekaligus bisa tertimpa; jam perangkat sebaiknya akurat.
 
 ## Pakai
 Buka alamat GitHub Pages repo ini, lalu pasang lewat menu "Pasang aplikasi" / "Add to Home screen".
