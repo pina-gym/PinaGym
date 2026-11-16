@@ -5,6 +5,8 @@ const lat=s=>String(s==null?'':s).normalize('NFD').replace(/[̀-ͯ]/g,'').replac
 const xe=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 const LOGO=()=>typeof S!=='undefined'&&S.settings&&S.settings.logo||'';
+const BOX=()=>!!(S.settings&&S.settings.logo_box);
+const LOGOP=()=>{const s=S.settings;return BOX()?(s.logo_j||s.logo):(s.logo_c||s.logo_j||s.logo)}; // versi JPEG untuk PDF
 function jpg(u){try{const b=atob(String(u).split(',')[1]||'');let i=2,w=0,h=0,c=3;while(i<b.length){if(b.charCodeAt(i)!==255){i++;continue}const mk=b.charCodeAt(i+1);if(mk>=0xc0&&mk<=0xc2){h=b.charCodeAt(i+5)*256+b.charCodeAt(i+6);w=b.charCodeAt(i+7)*256+b.charCodeAt(i+8);c=b.charCodeAt(i+9);break}i+=2+b.charCodeAt(i+2)*256+b.charCodeAt(i+3)}return w&&h?{bin:b,w,h,c}:null}catch(e){return null}}
 const LB={x:W-56-132,y:34,s:132}; // kotak putih logo di kartu
 function svg(m,o){ // o: {gym,pkg,end,status}
@@ -20,7 +22,7 @@ function svg(m,o){ // o: {gym,pkg,end,status}
 <text x="56" y="318" font-family="Courier New,monospace" font-size="38" font-weight="700" fill="#f59e0b">${xe(m.code)}</text>
 <text x="56" y="400" font-family="Arial,Helvetica,sans-serif" font-size="22" fill="#94a3b8">PAKET</text><text x="56" y="432" font-family="Arial,Helvetica,sans-serif" font-size="30" fill="#fff">${xe(o.pkg)}</text>
 <text x="300" y="400" font-family="Arial,Helvetica,sans-serif" font-size="22" fill="#94a3b8">BERLAKU S/D</text><text x="300" y="432" font-family="Arial,Helvetica,sans-serif" font-size="30" fill="#fff">${xe(o.end)}</text>
-<rect x="${qx}" y="${qy}" width="${qs}" height="${qs}" rx="12" fill="#fff"/><path d="${mods}" fill="#0f172a"/>${LOGO()?`<rect x="${LB.x}" y="${LB.y}" width="${LB.s}" height="${LB.s}" rx="16" fill="#fff"/><image href="${LOGO()}" x="${LB.x+8}" y="${LB.y+8}" width="${LB.s-16}" height="${LB.s-16}" preserveAspectRatio="xMidYMid meet"/>`:''}</svg>`}
+<rect x="${qx}" y="${qy}" width="${qs}" height="${qs}" rx="12" fill="#fff"/><path d="${mods}" fill="#0f172a"/>${LOGO()?`${BOX()?`<rect x="${LB.x}" y="${LB.y}" width="${LB.s}" height="${LB.s}" rx="16" fill="#fff"/>`:''}<image href="${LOGO()}" x="${LB.x+8}" y="${LB.y+8}" width="${LB.s-16}" height="${LB.s-16}" preserveAspectRatio="xMidYMid meet"/>`:''}</svg>`}
 
 /* isi halaman kartu (satuan poin, titik asal kiri-bawah kartu 85,6 x 54 mm) */
 const PK=72/25.4,CPW=85.6*PK,CPH=54*PK;
@@ -36,9 +38,9 @@ function pcontent(m,o){
   +T(56,400,22,'F1','0.58 0.64 0.72','PAKET')+T(56,432,30,'F1','1 1 1',o.pkg)+T(300,400,22,'F1','0.58 0.64 0.72','BERLAKU S/D')+T(300,432,30,'F1','1 1 1',o.end);
  c+=`1 1 1 rg ${X(qx)} ${Y(qy+qs)} ${L(qs)} ${L(qs)} re f\n0.059 0.090 0.165 rg\n`;
  for(let r=0;r<n;r++)for(let cc=0;cc<n;cc++)if(q[r][cc])c+=`${X(qx+(cc+1)*cell)} ${Y(qy+(r+2)*cell)} ${L(cell)} ${L(cell)} re f\n`;
- const lg=LOGO()?jpg(LOGO()):null;
+ const lg=LOGO()?jpg(LOGOP()):null;
  if(lg){const bs=LB.s-16,f=Math.min(bs/lg.w,bs/lg.h),dw=lg.w*f,dh=lg.h*f,cx=LB.x+LB.s/2,cy=LB.y+LB.s/2;
-  c+=`1 1 1 rg ${X(LB.x)} ${Y(LB.y+LB.s)} ${L(LB.s)} ${L(LB.s)} re f\nq ${L(dw)} 0 0 ${L(dh)} ${X(cx-dw/2)} ${Y(cy+dh/2)} cm /Im0 Do Q\n`}
+  c+=`${BOX()?`1 1 1 rg ${X(LB.x)} ${Y(LB.y+LB.s)} ${L(LB.s)} ${L(LB.s)} re f\n`:''}q ${L(dw)} 0 0 ${L(dh)} ${X(cx-dw/2)} ${Y(cy+dh/2)} cm /Im0 Do Q\n`}
  return{c,lg}}
 function mkpdf(objs){let out='%PDF-1.4\n',off=[];objs.forEach((b,i)=>{off.push(out.length);out+=`${i+1} 0 obj\n${b}\nendobj\n`});
  const xr=out.length;out+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`+off.map(x=>String(x).padStart(10,'0')+' 00000 n \n').join('')+`trailer\n<</Size ${objs.length+1}/Root 1 0 R>>\nstartxref\n${xr}\n%%EOF`;

@@ -157,10 +157,10 @@ th.ck,td.ck{width:36px}.ck input{width:20px;height:20px;min-height:0;accent-colo
 .paybar b#posTotal{font:700 20px var(--f-head)}.paybar select{width:auto}.paybar .btn{padding:12px 22px;font-size:16px}
 @media(max-width:640px){.paybar{left:12px;right:12px;bottom:calc(64px + env(safe-area-inset-bottom,0px));max-width:none;justify-content:space-between}.paybar>div{flex:1}.tiles{grid-template-columns:1fr 1fr;gap:8px}.ptb .seg{width:100%}.ptb .seg button{flex:1}.padgap{height:150px}}
 /* logo gym */
-.lgprev{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;display:inline-block;margin-bottom:10px}.lgprev img{display:block;max-width:180px;max-height:120px}
-.blg{width:34px;height:34px;object-fit:contain;background:#fff;border-radius:8px;padding:2px;vertical-align:middle;margin-right:8px;flex:none}
+.lgprev{background:repeating-conic-gradient(#e5e7eb 0 25%,#fff 0 50%) 0 0/16px 16px;border:1px solid var(--line);border-radius:12px;padding:10px;display:inline-block;margin-bottom:10px}.lgprev img{display:block;max-width:180px;max-height:120px}
+.blg{width:34px;height:34px;object-fit:contain;vertical-align:middle;margin-right:8px;flex:none}
 .rclg{max-width:120px;max-height:64px;object-fit:contain}.dlg{display:block;margin:0 auto 6px;max-width:40mm;max-height:22mm;object-fit:contain}
-.tvlg{height:1em;vertical-align:-.12em;margin-right:12px;background:#fff;border-radius:8px;padding:2px}
+.tvlg{height:1em;vertical-align:-.12em;margin-right:12px}
 @media print{#printrc.doc .dlg{margin:0 0 8px;max-width:60mm;max-height:26mm}}
 /* cetak kartu A4 */
 #printrc.sheet{display:none}

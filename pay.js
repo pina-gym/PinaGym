@@ -37,7 +37,7 @@ function rekapLines(ym){const L=[],a=(t,b,sz)=>L.push({t,b:!!b,s:sz}),P=payees(y
  a('-'.repeat(PW));a(lrp('TOTAL GAJI','Rp '+fnum(P.reduce((x,s)=>x+s.total,0))),1,11);a('');a('Dicetak '+T0+' '+hhmm(),0,8);return L}
 
 /* ---- PDF teks A4 (Courier + Helvetica-Bold), tanpa library ---- */
-function pdfDoc(lines){const pw=595.28,ph=841.89,m=48,pages=[],lg=S.settings.logo?Card.jpg(S.settings.logo):null;let cur=[],y=ph-m;
+function pdfDoc(lines){const pw=595.28,ph=841.89,m=48,pages=[],lg=S.settings.logo?Card.jpg(S.settings.logo_j||S.settings.logo):null;let cur=[],y=ph-m;
  if(lg){const f=Math.min(60/lg.w,60/lg.h),dw=lg.w*f,dh=lg.h*f;cur.push(`q ${dw.toFixed(1)} 0 0 ${dh.toFixed(1)} ${m} ${(y-dh).toFixed(1)} cm /Im0 Do Q`);y-=dh+8}
  lines.forEach(l=>{const sz=l.s||10,lh=sz*1.45;if(y-lh<m){pages.push(cur);cur=[];y=ph-m}y-=lh;if(l.t!=='')cur.push(`BT /${l.b&&sz>=11?'F3':l.b?'F2':'F1'} ${sz} Tf ${m} ${y.toFixed(1)} Td (${asc(l.t).replace(/[\\()]/g,'\\$&')}) Tj ET`)});
  pages.push(cur);const objs=['<</Type/Catalog/Pages 2 0 R>>',null,'<</Type/Font/Subtype/Type1/BaseFont/Courier>>','<</Type/Font/Subtype/Type1/BaseFont/Courier-Bold>>','<</Type/Font/Subtype/Type1/BaseFont/Helvetica-Bold>>'];
