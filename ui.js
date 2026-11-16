@@ -37,7 +37,8 @@ S.sel={products:new Set(),packages:new Set(),members:new Set()};
 const selTd=(k,id)=>`<td class="ck"><input type="checkbox" data-sel="${k}" data-id="${esc(id)}" aria-label="Pilih"${S.sel[k].has(id)?' checked':''}></td>`;
 const selTh=(k,ids)=>'#sel:'+k+':'+(ids.length&&ids.every(i=>S.sel[k].has(i))?1:0);
 const selBar=(k,ids,ok)=>ok&&ids.length?`<div class="bulk"><span>${S.sel[k].size?`<b>${S.sel[k].size}</b> dipilih`:'Centang beberapa data untuk dihapus sekaligus'}</span><span class="pill" style="flex-wrap:wrap">${S.sel[k].size?`<button class="btn sm red" data-a="bulkdel" data-v="${k}">Hapus terpilih (${S.sel[k].size})</button><button class="btn sm ghost" data-a="selclear" data-v="${k}">Batal pilih</button>`:''}<button class="btn sm ghost" data-a="selall" data-v="${k}">Pilih semua (${ids.length})</button><button class="btn sm red" data-a="bulkall" data-v="${k}">Hapus semua (${ids.length})</button></span></div>`:'';
-const memList=()=>{const f=S.filter,q=S.q.toLowerCase();return S.members.filter(m=>(!q||m.name.toLowerCase().includes(q)||m.code.toLowerCase().includes(q))&&(!f||mstat(m)[0]===f))};
+const mtOK=m=>{const t=S.mtype||'monthly';return t==='all'||(t==='daily')===isDaily(m.pkg)};
+const memList=()=>{const f=S.filter,q=S.q.toLowerCase();return S.members.filter(m=>(!q||m.name.toLowerCase().includes(q)||m.code.toLowerCase().includes(q))&&(!f||mstat(m)[0]===f)&&mtOK(m))};
 const selIds=k=>k==='products'?S.products.map(x=>x.id):k==='packages'?PKG.map(x=>x.id):memList().map(x=>x.id);
 
 /* ---------- menu & dashboard ---------- */
@@ -46,7 +47,7 @@ P.dashboard=()=>{let b='';if(canWa()){const n=queue().length;if(n)b=`<div class=
 
 /* ---------- member ---------- */
 P.members=()=>{const c=can('member.contact');const f=S.filter,q=S.q.toLowerCase();
- const list=S.members.filter(m=>(!q||m.name.toLowerCase().includes(q)||m.code.toLowerCase().includes(q))&&(!f||mstat(m)[0]===f));
+ const list=S.members.filter(m=>(!q||m.name.toLowerCase().includes(q)||m.code.toLowerCase().includes(q))&&(!f||mstat(m)[0]===f)&&mtOK(m));
  return`${c?'':'<p class="mut">Akses terbatas: kontak (HP) disembunyikan untuk role Anda.</p>'}<div class="tb"><input id="q" placeholder="Cari nama / kode" value="${esc(S.q)}"><select data-ch="filter"><option value="">Semua status</option>${['Aktif','Akan Expired','Expired','Freeze'].map(x=>`<option${f===x?' selected':''}>${x}</option>`).join('')}</select>${can('member.create')?`<button class="btn ghost" data-a="go" data-v="register">${ico('plus')} Daftar baru</button>`:''}</div>
  <div class="card" id="mlist">${selBar('members',list.map(m=>m.id),can('member.delete'))}${tbl([...(can('member.delete')?[selTh('members',list.map(m=>m.id))]:[]),'Kode','Nama',...(c?['No. HP']:[]),'Paket','Berakhir','Status',''],list.map(m=>`<tr>${can('member.delete')?selTd('members',m.id):''}<td>${m.code}</td><td>${esc(m.name)}${c&&m.addr?`<br><small class="mut">${esc(m.addr)}</small>`:''}</td>${c?`<td>${esc(m.phone)}</td>`:''}<td>${esc(pkgName(m.pkg))}</td><td>${m.end}</td><td>${badge(mstat(m))}</td><td><span class="pill" style="flex-wrap:wrap;min-width:150px">${can('member.view')?`<button class="btn sm ghost" data-a="mcard" data-v="${m.id}">Kartu</button>`:''}${canCW()&&m.phone&&can('member.view')?`<button class="btn sm ghost" data-a="mwacard" data-v="${m.id}">WA Kartu</button>`:''}${canWa()&&m.phone?`<button class="btn sm ghost" data-a="wasend" data-v="${m.id}" data-t="${mstat(m)[0]==='Expired'?tplBy('Membership Habis').id:tplBy('Pengingat Expired').id}">WA</button>`:''}${can('member.edit')?`<button class="btn sm ghost" data-a="editmember" data-v="${m.id}">Ubah</button>`:''}${can('membership.freeze')?`<button class="btn sm ghost" data-a="freeze" data-v="${m.id}">${m.freeze?'Aktifkan':'Freeze'}</button>`:''}${can('member.delete')?cfl('dm'+m.id,'delmember',m.id):''}</span></td></tr>`))}</div>`};
 
@@ -223,21 +224,23 @@ function posPay(){
  if(!S.shift){toast('Buka shift terlebih dahulu.');return}
  const items=S.products.filter(p=>S.cart[p.id]>0).map(p=>({p,q:S.cart[p.id]})),pk=posPkg(),method=document.getElementById('pm').value,nm=S.pnew&&String(S.pnew.name).trim();
  if(!items.length&&!pk){toast('Pilih produk atau paket membership.');return}
- if(pk&&!S.pmem&&!nm){toast('Pilih member, atau isi nama untuk daftar member baru.');return}
- if(pk&&nm&&!can('member.create')){toast('Role Anda tidak boleh mendaftarkan member.');return}
- if(pk&&S.pmem&&!can('member.extend')){toast('Role Anda tidak boleh memperpanjang membership.');return}
- if(pk&&pk.pt&&!S.ptid){toast('Pilih trainer untuk paket ini.');return}
+ if(pk&&!isDaily(pk)&&!S.pmem&&!nm){toast('Pilih member, atau isi nama untuk daftar member baru.');return}
+ if(pk&&!isDaily(pk)&&nm&&!can('member.create')){toast('Role Anda tidak boleh mendaftarkan member.');return}
+ if(pk&&!isDaily(pk)&&S.pmem&&!can('member.extend')){toast('Role Anda tidak boleh memperpanjang membership.');return}
+ if(pk&&pk.pt&&!isDaily(pk)&&!S.ptid){toast('Pilih trainer untuk paket ini.');return}
  if(items.some(i=>i.q>i.p.stock)){toast('Stok tidak cukup.');return}
  const dc=discCalc();if(dc.err){toast(dc.err);return}
  const grp=uid(),txs=[];let mem=S.pmem?S.members.find(x=>x.id===S.pmem):null,isNew=false;
+ if(pk&&isDaily(pk))mem=null;
  if(pk){
-  if(nm){const t=newMember(nm,String(S.pnew.phone||'').trim(),pk.id,method,S.ptid,S.pnew.addr);t.grp=grp;txs.push(t);mem=S.members.find(x=>x.id===t.mid);isNew=true}
+  if(isDaily(pk)){const t=newVisit(S.dname,pk.id,method);t.grp=grp;txs.push(t);log('kunjungan_harian',(S.dname||'umum'))}
+  else if(nm){const t=newMember(nm,String(S.pnew.phone||'').trim(),pk.id,method,S.ptid,S.pnew.addr);t.grp=grp;txs.push(t);mem=S.members.find(x=>x.id===t.mid);isNew=true}
   else{const base=mem.end>T0?mem.end:T0;mem.end=iso(addD(new Date(base+'T00:00:00'),pk.days));mem.freeze=false;mem.pkg=pk.id;mem.tid=pk.pt?S.ptid:'';mem.ptu=0;
    const t=addTx('membership',S.user.id,method,pk.price,[{name:'Perpanjangan '+pk.name,qty:1,price:pk.price,cost:0}],{mid:mem.id,pk:pk.id});t.grp=grp;txs.push(t);log('member_perpanjang',mem.code)}}
  if(items.length){items.forEach(i=>i.p.stock-=i.q);
   const t=addTx('pos',S.user.id,method,items.reduce((s,i)=>s+i.p.price*i.q,0),items.map(i=>({name:i.p.name,qty:i.q,price:i.p.price,cost:i.p.cost,pid:i.p.id})),mem?{mid:mem.id}:{});t.grp=grp;txs.push(t);log('pos_checkout',t.inv)}
  if(dc.amt>0){let rem=dc.amt;[...txs].reverse().forEach(t=>{const d=Math.min(rem,t.total);if(d>0){t.items.push({name:'Diskon'+(dc.label?' '+dc.label:''),qty:1,price:-d,cost:0});t.total-=d;t.disc=d;rem-=d}});if(dc.promo)dc.promo.used=(dc.promo.used||0)+1;log('pos_diskon',(dc.label||'manual')+' '+dc.amt)}
- S.cart={};S.pmem=null;S.pnew=null;S.ppk='';S.pq='';S.pv='';S.pdm=null;S.ptid='';S.popen=false;
+ S.cart={};S.dname='';S.pmem=null;S.pnew=null;S.ppk='';S.pq='';S.pv='';S.pdm=null;S.ptid='';S.popen=false;
  render();receipt(txs[0]);if(mem)afterReg(mem.id);
  if(isNew&&autoSend(mem))toast('Membuka WhatsApp…')}
 {const _rc=receipt;

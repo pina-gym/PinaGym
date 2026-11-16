@@ -2,14 +2,15 @@
 const pOpts=()=>({canReg:can('member.create'),canExt:can('member.extend')});
 function posItems(){const o=pOpts(),q=String(S.pf||'').trim().toLowerCase(),tab=S.ptab||'all',L=[];
  if(tab!=='pkg')S.products.forEach(p=>{if(!q||p.name.toLowerCase().includes(q))L.push({k:'p',id:p.id,name:p.name,price:p.price,sub:p.stock<=0?'Habis':'Stok '+p.stock,off:p.stock<=0,n:S.cart[p.id]||0})});
- if(tab!=='prod'&&(o.canReg||o.canExt))PKG.filter(p=>p.on).forEach(p=>{if(!q||p.name.toLowerCase().includes(q))L.push({k:'k',id:p.id,name:p.name,price:p.price,sub:p.days+' hari'+(p.pt?' + Trainer':''),n:S.ppk===p.id?1:0})});
+ if(tab!=='prod'&&(o.canReg||o.canExt))PKG.filter(p=>p.on).forEach(p=>{if(!q||p.name.toLowerCase().includes(q))L.push({k:'k',id:p.id,name:p.name,price:p.price,sub:isDaily(p)?'Harian · tanpa kartu':p.days+' hari'+(p.pt?' + Trainer':''),n:S.ppk===p.id?1:0})});
  return L}
 const posTiles=()=>{const L=posItems();return L.length?L.map(i=>`<button type="button" class="tile${i.k==='k'?' pk':''}${i.n?' on':''}" data-a="${i.k==='k'?'ppick':'padd'}" data-v="${i.id}"${i.off?' disabled':''}>${i.n?`<span class="qb">${i.k==='k'?'✓':i.n}</span>`:''}${i.k==='k'?'<small class="tg">Paket</small>':''}<b>${esc(i.name)}</b><span class="pr">${rp(i.price)}</span><small>${i.sub}</small></button>`).join(''):'<p class="mut">Tidak ada yang cocok.</p>'};
 function posCart(){const pk=posPkg(),its=S.products.filter(p=>S.cart[p.id]>0);
  if(!its.length&&!pk)return'<p class="mut" style="margin:0">Ketuk produk atau paket untuk menambah.</p>';
  return(pk?`<div class="cl"><span><b>${esc(pk.name)}</b><br><small class="mut">Paket · ${rp(pk.price)}</small></span><button class="btn sm ghost" data-a="ppick" data-v="${pk.id}" aria-label="Hapus paket">×</button></div>`:'')+
  its.map(p=>`<div class="cl"><span><b>${esc(p.name)}</b><br><small class="mut">${rp(p.price)} × ${S.cart[p.id]}</small></span><span class="st"><button class="btn sm ghost" data-a="pdec" data-v="${p.id}" aria-label="Kurangi">−</button><b>${S.cart[p.id]}</b><button class="btn sm ghost" data-a="padd" data-v="${p.id}" aria-label="Tambah">+</button></span></div>`).join('')}
-function posCust(){const mem=S.pmem?S.members.find(x=>x.id===S.pmem):null,pk=posPkg(),o=pOpts();
+function posCust(){if(posPkg()&&isDaily(posPkg()))return`<div class="card pcu"><label>Nama pengunjung (opsional)<input id="pdn" value="${esc(S.dname||'')}" placeholder="Boleh dikosongkan" autocomplete="off"></label><p class="mut" style="margin:8px 0 0">Paket harian hanya dicatat sebagai kunjungan: tanpa kartu, tanpa nomor WhatsApp, tidak menjadi member. Untuk jadi member, pilih paket bulanan/tahunan atau gunakan tombol Upgrade di Data Member → Harian.</p></div>`;
+ const mem=S.pmem?S.members.find(x=>x.id===S.pmem):null,pk=posPkg(),o=pOpts();
  const need=pk&&!mem&&!S.pnew,open=S.popen||need;
  const trs=pk&&pk.pt?`<label style="margin-top:10px">Trainer<select id="ptid"><option value="">${S.trainers.some(t=>t.on)?'Pilih trainer':'Belum ada trainer (daftarkan di menu Trainer)'}</option>${S.trainers.filter(t=>t.on||t.id===S.ptid).map(t=>`<option value="${t.id}"${t.id===S.ptid?' selected':''}>${esc(t.name)}</option>`).join('')}</select></label>`:'';
  if(mem)return`<div class="card pcu"><p class="pill" style="flex-wrap:wrap;margin:0"><b>${esc(mem.name)}</b> <span class="mut">${mem.code}</span> ${badge(mstat(mem))}<button class="btn sm ghost" data-a="pmclear">Lepas</button></p>${trs}</div>`;
@@ -31,7 +32,7 @@ function cartHtml(){const pk=posPkg(),n=cartCount(),mem=S.pmem?S.members.find(x=
  if(pk&&pk.pt&&!S.ptid&&mem&&mem.tid)S.ptid=mem.tid;
  return`<div class="cartm"><h2 style="margin:0 0 10px">Konfirmasi pesanan</h2>
  <div class="card" style="margin-bottom:10px"><div id="pcart">${posCart()}</div></div>
- ${pk?'<h3 style="margin:10px 0 6px;font-size:15px">Data member</h3>':'<h3 style="margin:10px 0 6px;font-size:15px">Pelanggan</h3>'}${posCust()}${discBox()}
+ ${pk?`<h3 style="margin:10px 0 6px;font-size:15px">${isDaily(pk)?'Pengunjung harian':'Data member'}</h3>`:'<h3 style="margin:10px 0 6px;font-size:15px">Pelanggan</h3>'}${posCust()}${discBox()}
  <div class="cfoot"><div><small class="mut">Total</small><br><b id="posTotal2">${rp(posTotal())}</b></div><select id="pm" aria-label="Metode bayar"><option value="cash"${S.pmeth==='noncash'?'':' selected'}>Tunai</option><option value="noncash"${S.pmeth==='noncash'?' selected':''}>Non-tunai</option></select><button class="btn ghost" data-a="cartclose">Kembali</button>${can('pos.checkout')?`<button class="btn" data-a="pay"${n?'':' disabled'}>Bayar</button>`:''}</div></div>`}
 function cartRe(){const m=document.querySelector('#modal .modal'),y=m?m.scrollTop:0;modal(cartHtml());const m2=document.querySelector('#modal .modal');if(m2)m2.scrollTop=y}
 function cartOpen(){S.cartOpen=true;cartRe()}
@@ -50,7 +51,7 @@ const posRe=()=>{const y=scrollY;render();scrollTo(0,y);if(S.cartOpen)cartRe()};
  const r=_ec.apply(this,arguments);
  if(S.cartOpen&&document.querySelector('#modal .cartm')){if(a==='pmset'||a==='pmclear'||a==='pnewtoggle'){S.ptid=a==='pmset'&&S.ppk&&(S.members.find(x=>x.id===v)||{}).tid||'';S.popen=false}cartRe()}
  return r}}
-document.addEventListener('input',e=>{const t=e.target;if(t.id==='pfq'){S.pf=t.value;const b=document.getElementById('ptiles');if(b)b.innerHTML=posTiles()}});
+document.addEventListener('input',e=>{const t=e.target;if(t.id==='pdn')S.dname=t.value;if(t.id==='pfq'){S.pf=t.value;const b=document.getElementById('ptiles');if(b)b.innerHTML=posTiles()}});
 document.addEventListener('change',e=>{const t=e.target;if(t.id==='ptid')S.ptid=t.value;else if(t.id==='pm')S.pmeth=t.value});
 
 /* segarkan popup pesanan bila data/halaman dirender ulang */

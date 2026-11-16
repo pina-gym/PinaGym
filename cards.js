@@ -26,4 +26,8 @@ function cardSheetPrint(items){let box=document.getElementById('printrc');if(box
 document.addEventListener('change',e=>{const t=e.target;if(t.dataset&&t.dataset.csel){t.checked?S.cs.add(t.dataset.csel):S.cs.delete(t.dataset.csel);const c=document.getElementById('ccount');if(c)c.innerHTML=cardCount()}
  else if(t.id==='cf'){S.cf=t.value;renderView()}});
 document.addEventListener('input',e=>{const t=e.target;if(t.id==='cq'){S.cq=t.value;const b=document.getElementById('clist');if(b)b.innerHTML=cardRows();if(typeof labelTables==='function')labelTables()}});
-{const _m=P.members;P.members=()=>{const h=_m();return can('member.view')?h.replace('<div class="tb">','<div class="tb"><button class="btn ghost" data-a="go" data-v="cards">'+ico('card')+' Cetak kartu masal</button>'):h}}
+{const _m=P.members;P.members=()=>{let h=_m();{const t=S.mtype||'monthly',n=x=>S.members.filter(m=>x==='all'||(x==='daily')===isDaily(m.pkg)).length,tb=[['monthly','Bulanan'],['daily','Harian'],['all','Semua']];
+  h=`<div class="seg" style="margin-bottom:12px">${tb.map(x=>`<button type="button" class="${t===x[0]?'on':''}" data-a="mtype" data-v="${x[0]}">${x[1]} (${n(x[0])})</button>`).join('')}</div>`+h}
+  return can('member.view')?h.replace('<div class="tb">','<div class="tb"><button class="btn ghost" data-a="go" data-v="cards">'+ico('card')+' Cetak kartu masal</button>'):h}}
+
+{const _ec=extraClick;extraClick=function(a,v,el){if(a==='mtype'){S.mtype=v;S.sel&&S.sel.clear&&S.sel.clear();renderView();return true}return _ec.apply(this,arguments)}}

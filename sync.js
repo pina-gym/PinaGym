@@ -46,7 +46,7 @@ async function login(email,pw){
  return{ok:true}}
 function logout(){ses=null;jw(SK,null)}
 
-const counts=d=>({members:(d.members||[]).length,tx:(d.tx||[]).length,products:(d.products||[]).length,users:(d.users||[]).length,checkins:(d.checkins||[]).length,trainers:(d.trainers||[]).length});
+const counts=d=>({members:(d.members||[]).length,tx:(d.tx||[]).length,products:(d.products||[]).length,users:(d.users||[]).length,checkins:(d.checkins||[]).length,trainers:(d.trainers||[]).length,visits:(d.visits||[]).length});
 async function backupNow(kind){
  if(st.busy)return{ok:false,msg:'Backup sedang berjalan'};
  if(!live())return{ok:false,msg:'Akun backup belum masuk'};
