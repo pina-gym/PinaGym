@@ -15,7 +15,7 @@ function logoLoad(file){return new Promise((res,rej)=>{if(!file||!/^image\//.tes
   const tp=mkc(null),wh=mkc('#ffffff'),dk=mkc('#0f172a');
   res({logo:tp.toDataURL('image/png'),logo_j:wh.toDataURL('image/jpeg',.9),logo_c:dk.toDataURL('image/jpeg',.9),m:logoMono(wh)})}catch(e){rej(e)}};
  im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('Gambar tidak bisa dibaca.'))};im.src=u})}
-{const _g=P.gym;P.gym=()=>_g()+`<div class="card form" id="lgcard"><h2>Logo gym</h2><p class="mut">Logo tampil di struk, kartu member, slip gaji, menu samping, halaman login dan layar TV. Gambar otomatis dikecilkan; PNG transparan tetap transparan. Logo ikut tercadang di Backup Database.</p>
+{const _g=P.gym;P.gym=()=>_g()+`<div class="card form" id="lgcard"><h2>Logo gym</h2><p class="mut">Logo tampil di struk, kartu member, slip gaji, menu samping dan halaman login. Gambar otomatis dikecilkan; PNG transparan tetap transparan. Logo ikut tercadang di Backup Database.</p>
  ${LG()?`<div class="lgprev"><img src="${LG()}" alt="Logo saat ini"></div>`:'<p class="mut">Belum ada logo.</p>'}
  ${can('settings.manage')?`<label>${LG()?'Ganti logo':'Unggah logo'}<input type="file" id="logofile" accept="image/png,image/jpeg,image/webp"></label>${LG()?`<label class="chk" style="flex-direction:row;gap:8px;align-items:center"><input type="checkbox" data-a="logobox"${S.settings.logo_box?' checked':''}> Beri kotak putih di belakang logo pada kartu member (untuk logo yang gelap)</label><button type="button" class="btn red" data-a="logodel">Hapus logo</button>`:''}`:''}</div>`}
 document.addEventListener('change',async e=>{const t=e.target;if(t.id!=='logofile'||!can('settings.manage'))return;

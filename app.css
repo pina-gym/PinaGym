@@ -63,7 +63,6 @@ label{display:grid;gap:4px;font-size:12.5px;color:var(--mut);font-weight:600}lab
 .modal{background:var(--surface);border-radius:12px;padding:18px;width:100%;max-width:380px;max-height:90vh;overflow:auto}
 .rc{font:13px/1.5 ui-monospace,Menlo,monospace}.rc hr{border:0;border-top:1px dashed var(--mut)}.rc .row{display:flex;justify-content:space-between;gap:8px}
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;z-index:50;max-width:90vw}
-.tv{background:#0b0e13;color:#fff;border-radius:12px;padding:24px}.tv .n{font:700 44px var(--f-head);color:#ff8a42;display:block}
 .pm{display:flex;gap:10px;align-items:flex-start;font-weight:400;color:var(--ink);font-size:13.5px;grid-template-columns:none}.pm input{width:auto;min-height:0;margin-top:3px}.pm code{color:var(--mut);font-size:12px}
 @media(max-width:1024px){
  .side{position:fixed;left:0;top:0;transform:translateX(-100%);transition:transform .2s;z-index:30;width:280px}.side.open{transform:none}

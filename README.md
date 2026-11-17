@@ -17,11 +17,11 @@ Aplikasi manajemen gym dengan dashboard dan menu yang berbeda untuk tiap role (A
 - **Trainer**: pendaftaran, sesi (diatur admin), gaji trainer (pokok + persen) dan kasir (pokok), slip cetak/PDF/WhatsApp.
 - **Export Excel** riwayat transaksi harian/mingguan/bulanan/rentang bebas.
 - **Promo & voucher** (persen/rupiah, minimal belanja, masa berlaku, kuota) dan diskon manual di POS; **stok opname** dengan stok minimum dan riwayat; **bonus/potongan** di slip gaji; **WhatsApp massal** tanpa gateway (Daftar Siaran via kontak .vcf, atau kirim berurutan); banner "versi baru tersedia".
-- Laporan, dashboard TV, activity log, pengaturan, backup dan pulihkan data (JSON).
+- Laporan, activity log, pengaturan, backup dan pulihkan data (JSON).
 - Login dengan password ter-hash (PBKDF2), session timeout yang dapat diatur, batas percobaan login.
 - **POS sekali ketuk**: produk dan paket membership tampil sebagai tile; ketuk untuk menambah. Tombol mengambang **Lihat pesanan** membuka popup konfirmasi (keranjang dengan +/−, data member/trainer/alamat, diskon, metode bayar, Bayar). Mengetuk paket membership langsung membuka popup pengisian data member.
 - **Paket member + trainer**: paket bisa ditandai "termasuk trainer". Saat daftar/perpanjang (menu atau POS) kasir/admin memilih trainer dari daftar; member otomatis masuk ke trainer itu dan tiap check-in tercatat sebagai satu sesi (dasar komisi persentase).
-- **Logo gym**: unggah di Pengaturan Gym. Tampil di struk (layar, browser, thermal), kartu member (SVG/PDF), slip & rekap gaji (PDF/cetak), menu samping, login, dan layar TV. Ikut tercadang. Ekspor Excel tidak memuat gambar.
+- **Logo gym**: unggah di Pengaturan Gym. Tampil di struk (layar, browser, thermal), kartu member (SVG/PDF), slip & rekap gaji (PDF/cetak), menu samping, login. Ikut tercadang. Ekspor Excel tidak memuat gambar.
 - **Cetak kartu masal**: menu Cetak Kartu Masal, pilih beberapa/semua member, cetak langsung atau Simpan PDF A4 (10 kartu per lembar, garis potong). Tombol WA Kartu mengirim template Selamat Datang + PDF kartu.
 - **Sesi trainer otomatis**: trainer siaga 24 jam, tidak ada jadwal. Tiap check-in member paket + trainer langsung tercatat sebagai sesi Selesai. Sesi manual tetap bisa dicatat (opsional).
 - **Kamera check-in** di tablet bisa digeser dan diperkecil. Daftar member punya tombol **WA Kartu**.

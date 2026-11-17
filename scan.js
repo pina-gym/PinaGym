@@ -11,11 +11,13 @@ function checkinCode(raw){
  const s=mstat(m)[0];
  if(s==='Freeze')return{st:'freeze',m};
  if(s==='Expired')return{st:'expired',m,left:daysLeft(m)};
- const soon=s==='Akan Expired',left=daysLeft(m),ci=S.checkins.find(c=>c.date===T0&&c.m===m.id);
- if(ci)return{st:'dup',m,soon,left,time:ci.time};
- const cin={id:uid(),date:T0,time:hhmm(),m:m.id};S.checkins.push(cin);log('checkin',m.code);
- const tr=typeof ptSession==='function'?ptSession(m,cin.id):null;persist();
- return{st:'in',m,soon,left,tr}}
+ const soon=s==='Akan Expired',left=daysLeft(m),prev=S.checkins.filter(c=>c.date===T0&&c.m===m.id).sort((a,b)=>a.time<b.time?-1:1),first=prev[0];
+ /* scan ganda beruntun (< 2 menit) diabaikan; masuk lagi di jam lain tetap dicatat di Riwayat Kunjungan */
+ const nm=hhmm(),mins=x=>+x.slice(0,2)*60+ +x.slice(3,5);
+ if(first&&mins(nm)-mins(prev[prev.length-1].time)<2)return{st:'dup',m,soon,left,time:first.time};
+ const cin={id:uid(),date:T0,time:nm,m:m.id};S.checkins.push(cin);log('checkin',m.code);
+ const tr=!first&&typeof ptSession==='function'?ptSession(m,cin.id):null;persist();
+ return{st:'in',m,soon,left,tr,again:!!first,time:first&&first.time}}
 
 /* ---- bunyi ---- */
 let AC=null;
@@ -32,7 +34,7 @@ function showCI(r){
  if(m)b=`<div class="ci-n">${esc(m.name)}</div><div class="mut">${esc(m.code)} · ${esc(pkgName(m.pkg))}</div><div>Berlaku s/d <b>${m.end}</b>${r.st==='expired'?` <span class="mut">(sudah berakhir ${-r.left} hari)</span>`:r.left>=0&&r.st!=='freeze'?` <span class="mut">(${r.left===0?'berakhir hari ini':r.left+' hari lagi'})</span>`:''}</div>`;
  else b=`<div class="ci-n">${esc(r.code||'')}</div><div class="mut">Tidak ada member dengan kode ini.</div>`;
  if(r.tr)b+=`<div>Trainer: <b>${esc(r.tr.t.name)}</b> · sesi ke-${r.tr.used}${r.tr.max?' dari '+r.tr.max:''}</div>`+(r.tr.max&&r.tr.used>r.tr.max?'<div class="ci-w">Kuota sesi trainer sudah habis. Tawarkan perpanjangan paket.</div>':'');
- if(r.st==='dup')b+=`<div class="mut">Check-in pertama hari ini pukul ${r.time}.</div>`;
+ if(r.again)b+=`<div class="mut">Masuk lagi hari ini (check-in pertama pukul ${r.time}). Tercatat di Riwayat Kunjungan; sesi trainer dihitung sekali per hari.</div>`;if(r.st==='dup')b+=`<div class="mut">Check-in pertama hari ini pukul ${r.time}.</div>`;
  if(r.soon)b+=`<div class="ci-w">Masa aktif tinggal ${r.left} hari. Tawarkan perpanjangan.</div>`;
  const posOk=can('pos.access'),btn=[];
  if(m&&(r.st==='in'||r.st==='dup')&&posOk)btn.push(`<button class="btn" data-a="cipos" data-v="${m.id}">${ico('cart')} Tambah produk</button>`);
@@ -53,7 +55,7 @@ function doScan(raw,src){
  const now=Date.now();if(src==='camera'&&code.toUpperCase()===lastScan.code&&now-lastScan.t<4000)return false; // kamera membaca QR yang sama berulang
  lastScan={code:code.toUpperCase(),t:now,src};S.lastScan={code:code.toUpperCase(),src,at:hhmm()};
  const r=checkinCode(code);showCI(r);
- if(S.page==='checkin'||S.page==='visits'||S.page==='dashboard'||S.page==='tv')renderView();
+ if(S.page==='checkin'||S.page==='visits'||S.page==='dashboard')renderView();
  return true}
 
 /* ---- scanner keyboard (USB atau Bluetooth HID) ---- */
