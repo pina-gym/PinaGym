@@ -1,6 +1,6 @@
 # PinaGym
 
-Aplikasi manajemen gym dengan dashboard dan menu yang berbeda untuk tiap role (Admin, Kasir, Receptionist). Berjalan sebagai **PWA**: bisa dipasang di HP atau komputer dan tetap bisa dipakai tanpa internet. Data tersimpan di perangkat lebih dulu, dan dicadangkan otomatis setiap hari ke Supabase.
+Aplikasi manajemen gym dengan dashboard dan menu yang berbeda untuk tiap role (Admin, Kasir, Trainer). Berjalan sebagai **PWA**: bisa dipasang di HP atau komputer dan tetap bisa dipakai tanpa internet. Data tersimpan di perangkat lebih dulu, dan dicadangkan otomatis setiap hari ke Supabase.
 
 ## Fitur
 - Dashboard dan menu otomatis menyesuaikan role. Menu yang tidak diizinkan tidak tampil, dan halaman terlarang menampilkan 403.
@@ -37,7 +37,6 @@ Akun awal (segera ganti password di menu Manajemen User):
 |---|---|---|
 | Admin | `admin` | `admin123` |
 | Kasir | `kasir` | `kasir123` |
-| Receptionist | `resepsionis` | `resepsionis123` |
 
 Saat pertama dibuka, aplikasi berisi data contoh. Hapus lewat **Pengaturan Sistem → Kosongkan data**.
 
@@ -62,3 +61,5 @@ Aplikasi membuka WhatsApp dengan nomor dan pesan sudah terisi, lalu Anda menekan
 
 ## Batasan perangkat
 Printer, scanner, dan kamera memakai Web Bluetooth/WebUSB/Web Serial dan BarcodeDetector: berjalan di Chrome/Edge (Android dan komputer), tidak di iPhone/iPad. Backup otomatis hanya berjalan saat aplikasi terbuka dan online.
+
+- **Role Trainer**: hanya bisa membuka menu Trainer dan Sesi Trainer (hanya lihat). Di Manajemen User, user bisa dikaitkan ke satu trainer supaya hanya melihat member dan sesinya sendiri. Role Receptionist sudah dihapus.

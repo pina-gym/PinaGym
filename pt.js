@@ -23,3 +23,21 @@ function ptReconcile(){let n=0;S.checkins.forEach(c=>{const m=S.members.find(x=>
  const ym=pym(),sm=S.trainers.filter(t=>t.on).map(t=>{const l=S.tsess.filter(s=>s.tid===t.id&&s.date.startsWith(ym)&&s.status==='done');return{t,n:l.length,a:l.filter(s=>s.src==='ci').length,ms:S.members.filter(m=>m.tid===t.id&&mstat(m)[0]!=='Expired').length}});
  const info=`<div class="card"><h2>Sesi otomatis</h2><p class="mut" style="margin:0 0 10px">Trainer siaga 24 jam, jadi tidak perlu mengatur jadwal. Setiap kali member paket + trainer <b>check-in</b>, satu sesi langsung tercatat <b>Selesai</b> untuk trainer-nya dan masuk ke perhitungan komisi.</p>${tbl(['Trainer','>Member aktif','>Sesi '+ymLbl(ym),'>Dari check-in'],sm.map(x=>`<tr><td>${esc(x.t.name)}</td><td class="r">${x.ms}</td><td class="r"><b>${x.n}</b></td><td class="r">${x.a}</td></tr>`),'Belum ada trainer aktif.')}<details style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Catat sesi manual (opsional, untuk sesi di luar check-in)</summary>${form.replace('class="card form wide"','class="form wide" style="margin-top:10px"')}</details></div>`;
  return h.slice(0,i)+info+h.slice(j)}}
+
+
+/* role Trainer: hanya lihat menu Trainer & Sesi Trainer (milik sendiri bila akun dikaitkan ke trainer) */
+{const isTr=()=>S.user&&!can('trainer.manage')&&can('trainer.view');
+ const _t=P.trainers;P.trainers=()=>{if(!isTr())return _t();const me=trainerOf(S.user),list=S.trainers.filter(t=>t.on&&(!me||t.id===me.id));
+  return`<div class="card"><h2>Member aktif per trainer</h2>${tbl(['Trainer','>Member aktif','Daftar'],list.map(t=>{const ms=S.members.filter(m=>m.tid===t.id&&mstat(m)[0]!=='Expired');return`<tr><td>${esc(t.name)}</td><td class="r">${ms.length}</td><td>${ms.map(m=>esc(m.name)).join(', ')||'-'}</td></tr>`}),'Belum ada trainer.')}${me?'':'<p class="mut">Akun ini belum dikaitkan ke trainer tertentu, jadi semua trainer ditampilkan. Admin bisa mengaitkannya di Manajemen User.</p>'}</div>`};
+ const _s=P.tsessions;P.tsessions=()=>{if(!isTr())return _s();try{ptReconcile()}catch(e){}const me=trainerOf(S.user),ym=pym();
+  const l=S.tsess.filter(s=>s.status==='done'&&s.date.startsWith(ym)&&(!me||s.tid===me.id)).sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+  return`<div class="card"><h2>Sesi ${ymLbl(ym)}${me?' · '+esc(me.name):''}</h2><p class="mut" style="margin:0 0 10px">Sesi tercatat otomatis saat member paket + trainer check-in. Total bulan ini: <b>${l.length}</b>.</p>${tbl(['Tanggal','Jam','Trainer','Member'],l.map(s=>{const t=S.trainers.find(x=>x.id===s.tid),m=M(s.mid);return`<tr><td>${s.date}</td><td>${s.time}</td><td>${esc(t?t.name:'-')}</td><td>${esc(m.name)}</td></tr>`}),'Belum ada sesi bulan ini.')}</div>`}}
+/* pilih trainer terkait untuk akun role Trainer */
+{const trOpt=(cur,role)=>`<label class="usertr"${role==='trainer'?'':' hidden'}><span>Trainer terkait (khusus role Trainer)</span><select name="utid"><option value="">- semua trainer -</option>${S.trainers.map(t=>`<option value="${t.id}"${t.id===cur?' selected':''}>${esc(t.name)}</option>`).join('')}</select></label>`;
+ const _u=P.users;P.users=()=>_u().replace('<button class="btn">Tambah User</button>',trOpt('','')+'<button class="btn">Tambah User</button>');
+ const _ec=extraClick;extraClick=function(a,v,el){const r=_ec.apply(this,arguments);if(a==='edituser'){const f=document.querySelector('#modal form'),u=S.users.find(x=>x.id===v);if(f&&u&&!f.querySelector('[name=utid]')){const d=document.createElement('div');d.innerHTML=trOpt(u.tid||'',u.role);f.insertBefore(d.firstChild,f.lastElementChild)}}return r};
+ const _es=extraSubmit;extraSubmit=function(k,d,f){if(k==='adduser'){const un=String(d.username||'').trim().toLowerCase();const r=_es.apply(this,arguments);if(d.role==='trainer'&&d.utid)setTimeout(()=>{const u=S.users.find(x=>x.username===un);if(u){u.tid=d.utid;persist()}},400);return r}
+  if(k==='edituser'){const r=_es.apply(this,arguments);const u=S.users.find(x=>x.id===(f.dataset.id));if(u){if(u.role==='trainer'&&d.utid)u.tid=d.utid;else delete u.tid;persist()}return r}
+  return _es.apply(this,arguments)};
+ document.addEventListener('change',e=>{const t=e.target;if(t&&t.name==='role'&&t.form){const l=t.form.querySelector('.usertr');if(l)l.hidden=t.value!=='trainer'}});
+ document.addEventListener('DOMContentLoaded',()=>{});}
