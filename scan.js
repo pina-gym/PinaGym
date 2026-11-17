@@ -13,8 +13,8 @@ function checkinCode(raw){
  if(s==='Expired')return{st:'expired',m,left:daysLeft(m)};
  const soon=s==='Akan Expired',left=daysLeft(m),ci=S.checkins.find(c=>c.date===T0&&c.m===m.id);
  if(ci)return{st:'dup',m,soon,left,time:ci.time};
- S.checkins.push({id:uid(),date:T0,time:hhmm(),m:m.id});log('checkin',m.code);
- const tr=typeof ptSession==='function'?ptSession(m):null;persist();
+ const cin={id:uid(),date:T0,time:hhmm(),m:m.id};S.checkins.push(cin);log('checkin',m.code);
+ const tr=typeof ptSession==='function'?ptSession(m,cin.id):null;persist();
  return{st:'in',m,soon,left,tr}}
 
 /* ---- bunyi ---- */

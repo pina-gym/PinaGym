@@ -5,8 +5,10 @@ function trainerSel(pkgId,cur,always){const p=PKG.find(x=>x.id===pkgId),act=S.tr
 document.addEventListener('change',e=>{const t=e.target;if(t.name==='pkg'&&t.form){const l=t.form.querySelector('.trsel');if(l){const p=PKG.find(x=>x.id===t.value);l.hidden=!(p&&p.pt)}}});
 
 /* sesi otomatis saat check-in member paket + trainer */
-function ptSession(m){const p=PKG.find(x=>x.id===m.pkg);if(!p||!p.pt||!m.tid)return null;const t=S.trainers.find(x=>x.id===m.tid);if(!t)return null;
- m.ptu=(m.ptu||0)+1;S.tsess.push({id:uid(),date:T0,time:hhmm(),tid:t.id,mid:m.id,price:+p.ptv||+t.rate||0,status:'done',note:'Check-in member',src:'ci'});return{t,used:m.ptu,max:+p.ptn||0}}
+function ptSession(m,cid){const p=PKG.find(x=>x.id===m.pkg);if(!p||!p.pt||!m.tid)return null;const t=S.trainers.find(x=>x.id===m.tid);if(!t)return null;
+ m.ptu=(m.ptu||0)+1;S.tsess.push({id:uid(),date:T0,time:hhmm(),tid:t.id,mid:m.id,price:+p.ptv||+t.rate||0,status:'done',note:'Check-in member',src:'ci',cid:cid||''});return{t,used:m.ptu,max:+p.ptn||0}}
+/* cocokkan ulang: check-in member paket+trainer yang belum punya sesi (mis. data lama / perangkat lain) dibuatkan sesinya */
+function ptReconcile(){let n=0;S.checkins.forEach(c=>{const m=S.members.find(x=>x.id===c.m);if(!m||!m.tid)return;const p=PKG.find(x=>x.id===m.pkg);if(!p||!p.pt)return;const t=S.trainers.find(x=>x.id===m.tid);if(!t)return;if(c.date<iso(addD(new Date(m.end+'T00:00:00'),-(+p.days||0))))return;if(S.tsess.some(s=>s.src==='ci'&&(s.cid===c.id||(s.mid===m.id&&s.date===c.date))))return;S.tsess.push({id:uid(),date:c.date,time:c.time||'00:00',tid:t.id,mid:m.id,price:+p.ptv||+t.rate||0,status:'done',note:'Check-in member',src:'ci',cid:c.id});m.ptu=(m.ptu||0)+1;n++});if(n)persist();return n}
 
 /* form daftar & perpanjang: pilih trainer */
 {const _r=P.register;P.register=()=>{const h=_r(),f=PKG.find(p=>p.on);return h.replace('<label>Pembayaran',trainerSel(f&&f.id,'')+'<label>Pembayaran')};
@@ -16,7 +18,7 @@ function ptSession(m){const p=PKG.find(x=>x.id===m.pkg);if(!p||!p.pt||!m.tid)ret
 {const _ec=extraClick;extraClick=function(a,v,el){if(a==='mwacard'){S.cardM=v;return _ec.call(this,'cardwa',v,el)}return _ec.apply(this,arguments)}}
 
 /* Sesi Trainer: otomatis dari check-in (trainer tersedia 24 jam, tanpa atur jadwal) */
-{const _s=P.tsessions;P.tsessions=()=>{let h=_s();const i=h.indexOf('<form class="card form wide" data-f="addsess">');if(i<0)return h;const j=h.indexOf('</form>',i)+7;
+{const _s=P.tsessions;P.tsessions=()=>{try{ptReconcile()}catch(e){}let h=_s();const i=h.indexOf('<form class="card form wide" data-f="addsess">');if(i<0)return h;const j=h.indexOf('</form>',i)+7;
  const form=h.slice(i,j).replace('Atur sesi dengan trainer','Catat sesi manual').replace('Jadwalkan</button>','Catat sesi</button>');
  const ym=pym(),sm=S.trainers.filter(t=>t.on).map(t=>{const l=S.tsess.filter(s=>s.tid===t.id&&s.date.startsWith(ym)&&s.status==='done');return{t,n:l.length,a:l.filter(s=>s.src==='ci').length,ms:S.members.filter(m=>m.tid===t.id&&mstat(m)[0]!=='Expired').length}});
  const info=`<div class="card"><h2>Sesi otomatis</h2><p class="mut" style="margin:0 0 10px">Trainer siaga 24 jam, jadi tidak perlu mengatur jadwal. Setiap kali member paket + trainer <b>check-in</b>, satu sesi langsung tercatat <b>Selesai</b> untuk trainer-nya dan masuk ke perhitungan komisi.</p>${tbl(['Trainer','>Member aktif','>Sesi '+ymLbl(ym),'>Dari check-in'],sm.map(x=>`<tr><td>${esc(x.t.name)}</td><td class="r">${x.ms}</td><td class="r"><b>${x.n}</b></td><td class="r">${x.a}</td></tr>`),'Belum ada trainer aktif.')}<details style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Catat sesi manual (opsional, untuk sesi di luar check-in)</summary>${form.replace('class="card form wide"','class="form wide" style="margin-top:10px"')}</details></div>`;
