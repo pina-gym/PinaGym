@@ -9,7 +9,12 @@ function posCart(){const pk=posPkg(),its=S.products.filter(p=>S.cart[p.id]>0);
  if(!its.length&&!pk)return'<p class="mut" style="margin:0">Ketuk produk atau paket untuk menambah.</p>';
  return(pk?`<div class="cl"><span><b>${esc(pk.name)}</b><br><small class="mut">Paket · ${rp(pk.price)}</small></span><button class="btn sm ghost" data-a="ppick" data-v="${pk.id}" aria-label="Hapus paket">×</button></div>`:'')+
  its.map(p=>`<div class="cl"><span><b>${esc(p.name)}</b><br><small class="mut">${rp(p.price)} × ${S.cart[p.id]}</small></span><span class="st"><button class="btn sm ghost" data-a="pdec" data-v="${p.id}" aria-label="Kurangi">−</button><b>${S.cart[p.id]}</b><button class="btn sm ghost" data-a="padd" data-v="${p.id}" aria-label="Tambah">+</button></span></div>`).join('')}
-function posCust(){if(posPkg()&&isDaily(posPkg()))return`<div class="card pcu"><label>Nama pengunjung (opsional)<input id="pdn" value="${esc(S.dname||'')}" placeholder="Boleh dikosongkan" autocomplete="off"></label><p class="mut" style="margin:8px 0 0">Paket harian hanya dicatat sebagai kunjungan: tanpa kartu, tanpa nomor WhatsApp, tidak menjadi member. Untuk jadi member, pilih paket bulanan/tahunan atau gunakan tombol Upgrade di Data Member → Harian.</p></div>`;
+const dailyNames=(q,all)=>{q=String(q||'').trim().toLowerCase();const c=new Map();
+ [...S.visits].sort((a,b)=>(a.date+a.time)<(b.date+b.time)?1:-1).forEach(v=>{const n=String(v.name||'').trim();if(n){const k=n.toLowerCase(),o=c.get(k);if(o)o.n++;else c.set(k,{name:n,n:1,phone:v.phone||'',addr:v.addr||''})}});
+ S.members.filter(m=>isDaily(m.pkg)).forEach(m=>{const k=m.name.toLowerCase();if(!c.has(k))c.set(k,{name:m.name,n:0,phone:m.phone||'',addr:m.addr||''})});
+ return[...c.values()].filter(x=>!q||x.name.toLowerCase().includes(q)).slice(0,all?99999:8)};
+const dailyChips=q=>{const l=dailyNames(q);return l.length?l.map(x=>`<button type="button" class="btn sm ghost" data-a="pdname" data-v="${esc(x.name)}">${esc(x.name)}${x.n>1?' <small class="mut">'+x.n+'x</small>':''}</button>`).join(' '):'<span class="mut">Belum ada pengunjung tersimpan yang cocok.</span>'};
+function posCust(){if(posPkg()&&isDaily(posPkg()))return`<div class="card pcu"><div class="form"><label>Nama pengunjung (wajib)<input id="pdn" value="${esc(S.dname||'')}" placeholder="Ketik untuk mencari yang sudah tercatat" autocomplete="off"></label><div id="pdchipsw"><small class="mut">Pengunjung tercatat (ketuk untuk mengisi otomatis):</small><div id="pdchips" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${dailyChips(S.dname)}</div></div><label>Alamat (wajib)<textarea id="pda" rows="2" placeholder="Alamat pengunjung">${esc(S.daddr||'')}</textarea></label><label>No. WhatsApp (opsional)<input id="pdp" type="tel" value="${esc(S.dphone||'')}" placeholder="08xxxxxxxxxx"></label></div><p class="mut" style="margin:8px 0 0">Paket harian hanya dicatat sebagai kunjungan: tanpa kartu dan tidak menjadi member. Untuk berlangganan, gunakan Upgrade di Data Member → Harian.</p></div>`;
  const mem=S.pmem?S.members.find(x=>x.id===S.pmem):null,pk=posPkg(),o=pOpts();
  const need=pk&&!mem&&!S.pnew,open=S.popen||need;
  const trs=pk&&pk.pt?`<label style="margin-top:10px">Trainer<select id="ptid"><option value="">${S.trainers.some(t=>t.on)?'Pilih trainer':'Belum ada trainer (daftarkan di menu Trainer)'}</option>${S.trainers.filter(t=>t.on||t.id===S.ptid).map(t=>`<option value="${t.id}"${t.id===S.ptid?' selected':''}>${esc(t.name)}</option>`).join('')}</select></label>`:'';
@@ -44,6 +49,7 @@ const posRe=()=>{const y=scrollY;render();scrollTo(0,y);if(S.cartOpen)cartRe()};
  if(a==='ppick'){const was=S.ppk===v;S.ppk=was?'':v;S.ptid='';if(S.ppk&&!S.pmem&&!S.pnew)S.popen=true;posRe();if(S.ppk)cartOpen();else if(S.cartOpen&&!cartCount())cartShut();return true}
  if(a==='ptab'){S.ptab=v;posRe();return true}
  if(a==='pcust'){S.popen=!S.popen;if(S.cartOpen)cartRe();return true}
+ if(a==='pdname'){const x=dailyNames('',1).find(y=>y.name===v);S.dname=v;if(x){S.dphone=x.phone||'';S.daddr=x.addr||''}if(S.cartOpen)cartRe();return true}
  if(a==='cartopen'){if(cartCount())cartOpen();return true}
  if(a==='cartclose'){cartShut();return true}
  if(a==='mclose'&&S.cartOpen){S.cartOpen=false}
@@ -51,7 +57,7 @@ const posRe=()=>{const y=scrollY;render();scrollTo(0,y);if(S.cartOpen)cartRe()};
  const r=_ec.apply(this,arguments);
  if(S.cartOpen&&document.querySelector('#modal .cartm')){if(a==='pmset'||a==='pmclear'||a==='pnewtoggle'){S.ptid=a==='pmset'&&S.ppk&&(S.members.find(x=>x.id===v)||{}).tid||'';S.popen=false}cartRe()}
  return r}}
-document.addEventListener('input',e=>{const t=e.target;if(t.id==='pdn')S.dname=t.value;if(t.id==='pfq'){S.pf=t.value;const b=document.getElementById('ptiles');if(b)b.innerHTML=posTiles()}});
+document.addEventListener('input',e=>{const t=e.target;if(t.id==='pda')S.daddr=t.value;if(t.id==='pdp')S.dphone=t.value;if(t.id==='pdn'){S.dname=t.value;const b=document.getElementById('pdchips');if(b)b.innerHTML=dailyChips(t.value)}if(t.id==='pfq'){S.pf=t.value;const b=document.getElementById('ptiles');if(b)b.innerHTML=posTiles()}});
 document.addEventListener('change',e=>{const t=e.target;if(t.id==='ptid')S.ptid=t.value;else if(t.id==='pm')S.pmeth=t.value});
 
 /* segarkan popup pesanan bila data/halaman dirender ulang */

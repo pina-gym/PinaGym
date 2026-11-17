@@ -224,6 +224,7 @@ function posPay(){
  if(!S.shift){toast('Buka shift terlebih dahulu.');return}
  const items=S.products.filter(p=>S.cart[p.id]>0).map(p=>({p,q:S.cart[p.id]})),pk=posPkg(),method=document.getElementById('pm').value,nm=S.pnew&&String(S.pnew.name).trim();
  if(!items.length&&!pk){toast('Pilih produk atau paket membership.');return}
+ if(pk&&isDaily(pk)&&(!String(S.dname||'').trim()||!String(S.daddr||'').trim())){toast('Nama dan alamat pengunjung harian wajib diisi.');return}
  if(pk&&!isDaily(pk)&&!S.pmem&&!nm){toast('Pilih member, atau isi nama untuk daftar member baru.');return}
  if(pk&&!isDaily(pk)&&nm&&!can('member.create')){toast('Role Anda tidak boleh mendaftarkan member.');return}
  if(pk&&!isDaily(pk)&&S.pmem&&!can('member.extend')){toast('Role Anda tidak boleh memperpanjang membership.');return}
@@ -233,14 +234,14 @@ function posPay(){
  const grp=uid(),txs=[];let mem=S.pmem?S.members.find(x=>x.id===S.pmem):null,isNew=false;
  if(pk&&isDaily(pk))mem=null;
  if(pk){
-  if(isDaily(pk)){const t=newVisit(S.dname,pk.id,method);t.grp=grp;txs.push(t);log('kunjungan_harian',(S.dname||'umum'))}
+  if(isDaily(pk)){const t=newVisit(S.dname,pk.id,method,S.dphone,S.daddr);t.grp=grp;txs.push(t);log('kunjungan_harian',(S.dname||'umum'))}
   else if(nm){const t=newMember(nm,String(S.pnew.phone||'').trim(),pk.id,method,S.ptid,S.pnew.addr);t.grp=grp;txs.push(t);mem=S.members.find(x=>x.id===t.mid);isNew=true}
   else{const base=mem.end>T0?mem.end:T0;mem.end=iso(addD(new Date(base+'T00:00:00'),pk.days));mem.freeze=false;mem.pkg=pk.id;mem.tid=pk.pt?S.ptid:'';mem.ptu=0;
    const t=addTx('membership',S.user.id,method,pk.price,[{name:'Perpanjangan '+pk.name,qty:1,price:pk.price,cost:0}],{mid:mem.id,pk:pk.id});t.grp=grp;txs.push(t);log('member_perpanjang',mem.code)}}
  if(items.length){items.forEach(i=>i.p.stock-=i.q);
   const t=addTx('pos',S.user.id,method,items.reduce((s,i)=>s+i.p.price*i.q,0),items.map(i=>({name:i.p.name,qty:i.q,price:i.p.price,cost:i.p.cost,pid:i.p.id})),mem?{mid:mem.id}:{});t.grp=grp;txs.push(t);log('pos_checkout',t.inv)}
  if(dc.amt>0){let rem=dc.amt;[...txs].reverse().forEach(t=>{const d=Math.min(rem,t.total);if(d>0){t.items.push({name:'Diskon'+(dc.label?' '+dc.label:''),qty:1,price:-d,cost:0});t.total-=d;t.disc=d;rem-=d}});if(dc.promo)dc.promo.used=(dc.promo.used||0)+1;log('pos_diskon',(dc.label||'manual')+' '+dc.amt)}
- S.cart={};S.dname='';S.pmem=null;S.pnew=null;S.ppk='';S.pq='';S.pv='';S.pdm=null;S.ptid='';S.popen=false;
+ S.cart={};S.dname='';S.dphone='';S.daddr='';S.pmem=null;S.pnew=null;S.ppk='';S.pq='';S.pv='';S.pdm=null;S.ptid='';S.popen=false;
  render();receipt(txs[0]);if(mem)afterReg(mem.id);
  if(isNew&&autoSend(mem))toast('Membuka WhatsApp…')}
 {const _rc=receipt;
