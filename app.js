@@ -78,7 +78,7 @@ addEventListener('appinstalled',()=>{window._ip=null;render()});
 function installApp(){const e=window._ip;if(!e)return;e.prompt();e.userChoice.finally(()=>{window._ip=null;render()})}
 ['online','offline'].forEach(ev=>addEventListener(ev,()=>{const n=$('#net');if(n){n.textContent=navigator.onLine?'Online':'Offline';n.className='bd '+(navigator.onLine?'b-ok':'b-warn')}}));
 
-const APPV='v31';
+const APPV='v34';
 const trainerOf=u=>u&&u.tid?S.trainers.find(t=>t.id===u.tid):null;
 const eff=()=>S.rolePerms[S.user.role];
 const can=p=>{const e=eff();return[].concat(p).some(x=>e.has(x))};

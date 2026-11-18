@@ -81,7 +81,13 @@ const welcomeTxt=m=>fillTpl(tplBy('Selamat Datang').body,m)+'\n\nKartu member An
 function waFlow(m){modal(`<div style="max-width:440px;margin:auto"><h2 style="margin:0 0 6px">Kirim kartu + sambutan</h2><p class="mut" style="margin:0 0 10px">${esc(m.name)} (${m.code}). WhatsApp tidak mengizinkan teks dan berkas dikirim sekaligus oleh aplikasi, jadi kirim dua langkah berikut. Tiap langkah cukup satu ketukan.</p><div class="note" style="white-space:pre-wrap;max-height:160px;overflow:auto">${esc(welcomeTxt(m))}</div><div class="form"><button class="btn" data-a="cwtext" data-v="${m.id}">${ico('chat')} 1. Kirim ucapan selamat datang</button><button class="btn" data-a="cwfile" data-v="${m.id}">${ico('card')} 2. Kirim PDF kartu member</button></div><p style="text-align:right;margin:12px 0 0"><button class="btn ghost" data-a="mclose">Tutup</button></p></div>`)}
 const cardOpt=m=>({gym:S.settings.gym_name,pkg:pkgName(m.pkg),end:m.end});
 const m0=id=>S.members.find(x=>x.id===id);
-function afterReg(mid){const b=document.querySelector('#modal .modal p');if(!b)return;
+/* notifikasi pop up setelah member baru terdaftar: ajak kirim WA selamat datang + kartu */
+function waNotify(mid){const m=m0(mid);const old=document.getElementById('wan');if(old)old.remove();
+ if(!m||isDaily(m.pkg)||!canCW()||!String(m.phone||'').trim())return;
+ const d=document.createElement('div');d.id='wan';d.setAttribute('role','alert');
+ d.innerHTML=`<b>Member baru terdaftar</b><p>${esc(m.name)} (${m.code}). Kirim ucapan selamat datang dan kartu member lewat WhatsApp?</p><div class="pill"><button class="btn" data-a="wanopen" data-v="${m.id}">${ico('chat')} Kirim sekarang</button><button class="btn ghost" data-a="wanclose">Nanti</button></div>`;
+ document.body.appendChild(d)}
+function afterReg(mid){waNotify(mid);const b=document.querySelector('#modal .modal p');if(!b)return;
  b.insertAdjacentHTML('afterbegin',`<button class="btn ghost" data-a="mcard" data-v="${mid}" style="margin-right:6px">Kartu Member</button>${canCW()&&m0(mid)&&!isDaily(m0(mid).pkg)?`<button class="btn" data-a="cwfile" data-v="${mid}" style="margin-right:6px">${ico('card')} Kirim PDF Kartu</button>`:''}${canWa()?`<button class="btn" data-a="wawelcome" data-v="${mid}" style="margin-right:6px">${ico('chat')} Kirim WA Selamat Datang</button>`:''}`)}
 
 
@@ -90,6 +96,8 @@ function extraClick(a,v,el){
  if(a==='mcard'){if(can('member.view'))showCard(v);return true}
  if(a==='cardprint'){const m=S.members.find(x=>x.id===S.cardM);if(m)Card.print(m,cardOpt(m));return true}
  if(a==='cardpdf'){const m=S.members.find(x=>x.id===S.cardM);if(m){Card.download(Card.pdf(m,cardOpt(m)),'Kartu-'+m.code+'.pdf');log('kartu_pdf',m.code)}return true}
+ if(a==='wanclose'){const n=document.getElementById('wan');if(n)n.remove();return true}
+ if(a==='wanopen'){const n=document.getElementById('wan');if(n)n.remove();const m=m0(v);if(m&&canCW())waFlow(m);return true}
  if(a==='cardwa'){const m=S.members.find(x=>x.id===S.cardM);if(!m||!canCW())return true;waFlow(m);return true}
  if(a==='cwtext'){const m=S.members.find(x=>x.id===v);if(m&&canCW()&&m.phone){openWa('https://wa.me/'+waNum(m.phone)+'?text='+encodeURIComponent(welcomeTxt(m)));log('wa_sambutan',m.code)}return true}
  if(a==='cwfile'){const m=S.members.find(x=>x.id===v);if(!m||!canCW())return true;const t=welcomeTxt(m);copyText(t);
@@ -225,7 +233,7 @@ function posPay(){
  if(!S.shift){toast('Buka shift terlebih dahulu.');return}
  const items=S.products.filter(p=>S.cart[p.id]>0).map(p=>({p,q:S.cart[p.id]})),pk=posPkg(),method=document.getElementById('pm').value,nm=S.pnew&&String(S.pnew.name).trim();
  if(!items.length&&!pk){toast('Pilih produk atau paket membership.');return}
- if(pk&&isDaily(pk)&&(!String(S.dname||'').trim()||!String(S.daddr||'').trim())){toast('Nama dan alamat pengunjung harian wajib diisi.');return}
+ if(pk&&isDaily(pk)&&!String(S.dname||'').trim()){toast('Nama pengunjung harian wajib diisi.');return}
  if(pk&&!isDaily(pk)&&!S.pmem&&!nm){toast('Pilih member, atau isi nama untuk daftar member baru.');return}
  if(pk&&!isDaily(pk)&&nm&&!can('member.create')){toast('Role Anda tidak boleh mendaftarkan member.');return}
  if(pk&&!isDaily(pk)&&S.pmem&&!can('member.extend')){toast('Role Anda tidak boleh memperpanjang membership.');return}

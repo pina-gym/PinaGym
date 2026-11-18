@@ -171,3 +171,11 @@ th.ck,td.ck{width:36px}.ck input{width:20px;height:20px;min-height:0;accent-colo
 .cartm .cfoot>div{flex:1;min-width:90px}.cartm .cfoot b{font:700 20px var(--f-head)}.cartm .cfoot select{width:auto}
 body:has(#modal .cartm) .paybar{display:none}
 .cartm .cfoot .btn{flex:1}
+
+#wan{position:fixed;right:12px;bottom:calc(76px + env(safe-area-inset-bottom,0px));width:min(340px,calc(100vw - 24px));z-index:70;background:var(--surface);color:var(--ink);border:2px solid var(--ok,#16a34a);border-radius:12px;padding:14px;box-shadow:0 10px 30px #0004}
+#wan p{margin:6px 0 10px}
+#wan .pill{display:flex;gap:8px;flex-wrap:wrap}
+
+#wrm{position:fixed;right:12px;top:64px;width:min(340px,calc(100vw - 24px));max-height:60vh;overflow:auto;z-index:60;background:var(--surface);color:var(--ink);border:2px solid var(--warn,#d97706);border-radius:12px;padding:12px;box-shadow:0 10px 30px #0004}
+#wrm .wri{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line,#0002)}
+#wrb{position:relative}#wrb.has svg{color:var(--warn,#d97706)}.wrbadge{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:9px;background:#dc2626;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 4px}
