@@ -19,7 +19,7 @@ function queue(){
   if(!st)return;const k=m.id+'|'+m.end+'|'+st;if(sent.has(k))return;
   out.push(d>=0?{m,k,kind:'remind',lbl:d===0?'Berakhir hari ini':'Berakhir '+d+' hari lagi',tpl:tplBy('Pengingat Expired'),d}:{m,k,kind:'expired',lbl:'Sudah berakhir',tpl:tplBy('Membership Habis'),d})});
  return out.sort((a,b)=>a.d-b.d)}
-const canWa=()=>can('whatsapp.send')&&can('member.contact');
+const canWa=()=>can('whatsapp.send');
 const canCW=()=>canWa()||can('member.sendcard');
 /* konfirmasi lewat pop-up (bukan klik dua kali) */
 let CUR=null;
@@ -72,7 +72,7 @@ P.whatsapp=()=>{const t=S.tpl.find(x=>x.id==S.wa.t)||S.tpl[0]||{id:'',name:'',bo
  ${can('settings.manage')?`<form class="card form" data-f="settings"><h2>Jadwal pengingat</h2>${fld('Hari sebelum berakhir (pisahkan koma)','remind_days',S.settings.remind_days||'7,3,1,0')}<button class="btn">Simpan</button></form>`:''}
  <div class="tb"><select data-ch="watpl">${S.tpl.map(x=>`<option value="${x.id}"${x.id==t.id?' selected':''}>${esc(x.name)}</option>`).join('')}</select><select data-ch="wag">${[['new','Member baru (7 hari terakhir)'],['soon','Akan expired'],['expired','Sudah expired'],['all','Semua member']].map(([k,v])=>`<option value="${k}"${k===g?' selected':''}>${v}</option>`).join('')}</select></div>
  ${can('whatsapp.manage')?`<div class="card form"><label>Isi template (variabel: {nama} {kode} {tanggal} {sisa} {paket} {gym})<textarea id="tplbody" rows="3">${esc(t.body)}</textarea></label><button class="btn" data-a="savetpl" data-v="${t.id}">Simpan Template</button></div>`:'<p class="mut">Gunakan template yang disediakan. Isi template tidak dapat diubah oleh role Anda.</p>'}
- <div class="card"><h2>Kirim manual</h2>${cw?'':'<p class="mut">Role Anda tidak memiliki akses kontak/WhatsApp.</p>'}${tbl(['Nama','Kode','Berakhir',''],l.map(m=>`<tr><td>${esc(m.name)}</td><td>${m.code}</td><td>${m.end}</td><td>${cw&&m.phone?`<button class="btn sm" data-a="wasend" data-v="${m.id}" data-t="${esc(t.id)}">Kirim WA</button>`:''}</td></tr>`))}</div>`};
+ <div class="card"><h2>Kirim manual</h2>${cw?'':'<p class="mut">Role Anda tidak memiliki hak akses kirim WhatsApp.</p>'}${tbl(['Nama','Kode','Berakhir',''],l.map(m=>`<tr><td>${esc(m.name)}</td><td>${m.code}</td><td>${m.end}</td><td>${cw&&m.phone?`<button class="btn sm" data-a="wasend" data-v="${m.id}" data-t="${esc(t.id)}">Kirim WA</button>`:''}</td></tr>`))}</div>`};
 
 /* ---------- aksi klik ---------- */
 function showCard(id){const m=S.members.find(x=>x.id===id);if(!m)return;S.cardM=id;

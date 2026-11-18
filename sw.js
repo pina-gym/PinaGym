@@ -1,6 +1,6 @@
 /* PinaGym service worker: network-first (terbaru saat online) dengan cadangan cache agar bisa dibuka tanpa internet.
    Naikkan VERSION setiap kali berkas aplikasi berubah agar pengguna mendapat versi baru. */
-const VERSION = 'pinagym-v34';
+const VERSION = 'pinagym-v35';
 const SHELL = ['./', 'index.html', 'app.css', 'qr.js', 'card.js', 'sync.js', 'app.js', 'ui.js', 'ext.js', 'scan.js', 'print.js', 'pay.js', 'xlsx.js', 'extra.js', 'pt.js', 'pos.js', 'logo.js', 'cards.js', 'daily.js', 'barcode.js', 'totals.js', 'remind.js', 'syncdb.js', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png', 'icons/favicon.svg'];
 
