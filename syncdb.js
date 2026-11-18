@@ -9,7 +9,7 @@ const save=()=>{try{localStorage.setItem(KS,JSON.stringify(sy))}catch(e){}};
 const st={busy:false,err:'',msg:'',up:0,down:0,join:null};
 const on=()=>localStorage.getItem(KO)!=='1';
 const h53=s=>{let a=0xdeadbeef,b=0x41c6ce57;for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);a=Math.imul(a^c,2654435761);b=Math.imul(b^c,1597334677)}a=Math.imul(a^(a>>>16),2246822507)^Math.imul(b^(b>>>13),3266489909);b=Math.imul(b^(b>>>16),2246822507)^Math.imul(a^(a>>>13),3266489909);return(4294967296*(2097151&b)+(a>>>0)).toString(36)};
-const ARR=['members','tx','checkins','products','tpl','users','trainers','tsess','visits','promos','opname','padj'];
+const ARR=['members','tx','checkins','products','tpl','users','trainers','tsess','visits','shifts','promos','opname','padj'];
 const COLL={pkg:{get:()=>PKG,set:a=>{PKG.length=0;PKG.push(...a)}}};
 ARR.forEach(k=>COLL[k]={get:()=>S[k],set:a=>{S[k]=a}});
 const permObj=()=>Object.fromEntries(Object.entries(S.rolePerms).map(([k,v])=>[k,[...v]]));

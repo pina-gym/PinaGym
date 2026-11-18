@@ -216,7 +216,7 @@ function posResults(){const q=String(S.pq||'').trim().toLowerCase();if(q.length<
 P.pos=()=>{const mem=S.pmem?S.members.find(x=>x.id===S.pmem):null,pk=posPkg(),canReg=can('member.create'),canExt=can('member.extend');
  const today=S.members.filter(m=>isDaily(m.pkg)&&m.end>=T0&&!m.freeze).slice(-8).reverse();
  const pkOpts=PKG.filter(p=>p.on&&(mem?canExt:canReg||canExt)).map(p=>`<option value="${p.id}"${S.ppk===p.id?' selected':''}>${esc(p.name)} (${rp(p.price)})</option>`).join('');
- return`${S.shift?'':'<div class="note">Shift belum dibuka. Buka shift di menu Shift Kasir.</div>'}
+ return`${shiftOpen()?'':'<div class="note">Shift belum dibuka. Buka shift di menu Shift Kasir.</div>'}
  <div class="card"><h2>Pelanggan</h2>
   ${mem?`<p class="pill" style="flex-wrap:wrap"><b>${esc(mem.name)}</b> <span class="mut">${mem.code}</span> ${badge(mstat(mem))}<button class="btn sm ghost" data-a="pmclear">Lepas</button></p>`
   :S.pnew?`<div class="form"><div class="pill" style="flex-wrap:wrap"><b>Member baru</b><button class="btn sm ghost" data-a="pnewtoggle">Batal</button></div><label>Nama<input id="pnn" value="${esc(S.pnew.name)}" placeholder="Nama pelanggan"></label><label>No. HP (untuk WhatsApp)<input id="pnp" type="tel" value="${esc(S.pnew.phone)}" placeholder="08xxxxxxxxxx"></label></div>`
@@ -230,7 +230,7 @@ P.pos=()=>{const mem=S.pmem?S.members.find(x=>x.id===S.pmem):null,pk=posPkg(),ca
  <div class="card pill" style="display:flex;justify-content:space-between;flex-wrap:wrap"><div>${pk?`<small class="mut">Paket ${esc(pk.name)}: ${rp(pk.price)}</small><br>`:''}Total: <b id="posTotal" style="font:700 22px var(--f-head)">${rp(posTotal())}</b></div><div class="pill"><select id="pm"><option value="cash">Tunai</option><option value="noncash">Non-tunai</option></select>${can('pos.checkout')?'<button class="btn" data-a="pay">Bayar</button>':''}</div></div>`};
 function posPay(){
  if(!can('pos.checkout'))return;
- if(!S.shift){toast('Buka shift terlebih dahulu.');return}
+ if(!shiftOpen()){toast('Buka shift terlebih dahulu.');return}
  const items=S.products.filter(p=>S.cart[p.id]>0).map(p=>({p,q:S.cart[p.id]})),pk=posPkg(),method=document.getElementById('pm').value,nm=S.pnew&&String(S.pnew.name).trim();
  if(!items.length&&!pk){toast('Pilih produk atau paket membership.');return}
  if(pk&&isDaily(pk)&&!String(S.dname||'').trim()){toast('Nama pengunjung harian wajib diisi.');return}

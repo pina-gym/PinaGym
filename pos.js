@@ -26,7 +26,7 @@ function posCust(){if(posPkg()&&isDaily(posPkg()))return`<div class="card pcu"><
 const cartCount=()=>Object.values(S.cart).reduce((a,b)=>a+b,0)+(posPkg()?1:0);
 P.pos=()=>{const n=cartCount();
  const tab=S.ptab||'all',tabs=[['all','Semua'],['prod','Produk'],['pkg','Paket']];
- return`${S.shift?'':'<div class="note">Shift belum dibuka. Buka shift di menu Shift Kasir.</div>'}
+ return`${shiftOpen()?'':'<div class="note">Shift belum dibuka. Buka shift di menu Shift Kasir.</div>'}
  ${S.pmem&&S.members.find(x=>x.id===S.pmem)?`<p class="note pill" style="margin:0 0 10px;flex-wrap:wrap"><span>Pelanggan: <b>${esc(S.members.find(x=>x.id===S.pmem).name)}</b> <span class="mut">${S.members.find(x=>x.id===S.pmem).code}</span></span><button class="btn sm ghost" data-a="pmclear">Lepas</button></p>`:''}
  <div class="ptb"><input id="pfq" type="search" placeholder="Cari / scan barcode produk" value="${esc(S.pf||'')}" autocomplete="off"><span class="seg">${tabs.map(t=>`<button type="button" class="${tab===t[0]?'on':''}" data-a="ptab" data-v="${t[0]}">${t[1]}</button>`).join('')}</span></div>
  <div id="ptiles" class="tiles">${posTiles()}</div>
