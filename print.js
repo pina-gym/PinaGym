@@ -68,7 +68,7 @@ function printBrowser(t){const pp=paperNow(),d=rcData(t),L=rcLines(d,PAPERS[pp].
 async function printReceipt(t,mode){
  if(mode==='browser'){printBrowser(t);return}
  try{await Prn.send(rcBytes(t));toast('Struk dikirim ke printer.');log('cetak_struk',t.inv)}
- catch(e){toast('Gagal cetak: '+((e&&e.message)||e)+'. Periksa koneksi printer.');showPrinterPanel('Printer belum terhubung atau gagal. Hubungkan printer lalu cetak lagi.')}}
+ catch(e){toast('Gagal cetak: '+((e&&e.message)||e)+'. Periksa koneksi printer.');S.prnBack=t.id;showPrinterPanel('Printer belum terhubung atau gagal. Hubungkan printer lalu cetak lagi.')}}
 
 /* ---- panel printer ---- */
 function showPrinterPanel(msg){const s=Prn.st,sp=Prn.sup,b=Prn.get(),pp=paperDef();
@@ -83,7 +83,7 @@ function showPrinterPanel(msg){const s=Prn.st,sp=Prn.sup,b=Prn.get(),pp=paperDef
  <label>Kecepatan serial (baud)<select data-ch="prnbaud">${[9600,19200,38400,57600,115200].map(x=>`<option${(b.baud||9600)===x?' selected':''}>${x}</option>`).join('')}</select></label>
  <label>Ukuran kertas bawaan<select data-ch="prnpaper"${can('settings.manage')?'':' disabled'}>${Object.entries(PAPERS).map(([k,v])=>`<option value="${k}"${+k===pp?' selected':''}>${v.n}</option>`).join('')}</select></label>
  <label class="pm"><input type="checkbox" data-ch="prnauto"${(S.settings.auto_print==1)?' checked':''}${can('settings.manage')?'':' disabled'}><span>Cetak struk otomatis setelah pembayaran (jika printer terhubung)</span></label>
- <p class="pill" style="flex-wrap:wrap;justify-content:flex-end;margin-bottom:0"><button class="btn ghost" data-a="prntest">Cetak uji</button>${s.ready?'<button class="btn red" data-a="prndisc">Putuskan</button>':''}<button class="btn ghost" data-a="mclose">Tutup</button></p></div>`)}
+ <p class="pill" style="flex-wrap:wrap;justify-content:flex-end;margin-bottom:0"><button class="btn ghost" data-a="prntest">Cetak uji</button>${s.ready?'<button class="btn red" data-a="prndisc">Putuskan</button>':''}<button class="btn ghost" data-a="mclose">Tutup</button></p>${S.prnBack&&S.tx.find(x=>x.id===S.prnBack)?`<div class="pill" style="flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line,#0002)">${s.ready?'<button class="btn" data-a="prnbackprint">'+ico('print')+' Cetak struk ini sekarang</button>':''}<button class="btn ghost" data-a="prnback">Kembali ke struk</button></div>`:''}</div>`)}
 async function prnDo(fn,okMsg){try{await fn();toast(okMsg)}catch(e){if(e&&(e.name==='NotFoundError'||e.name==='AbortError'))toast('Pemilihan perangkat dibatalkan.');else toast('Gagal: '+((e&&e.message)||e))}if(document.getElementById('prpanel'))showPrinterPanel()}
 
 /* ---- hook struk ---- */
@@ -97,7 +97,9 @@ async function prnDo(fn,okMsg){try{await fn();toast(okMsg)}catch(e){if(e&&(e.nam
  if(a==='rcpaper'){S.rcPaper=v;const t=tx();if(t)receipt(t);return true}
  if(a==='rcprint'){const t=tx();if(t)printReceipt(t,'printer');return true}
  if(a==='rcbrowser'){const t=tx();if(t)printBrowser(t);return true}
- if(a==='prnpanel'){showPrinterPanel();return true}
+ if(a==='prnpanel'){S.prnBack=document.querySelector('#modal .rcctl')?S.rcId:null;showPrinterPanel();return true}
+ if(a==='prnback'){const t=S.tx.find(x=>x.id===S.prnBack);S.prnBack=null;if(t)receipt(t);else modal('');return true}
+ if(a==='prnbackprint'){const t=S.tx.find(x=>x.id===S.prnBack);S.prnBack=null;if(t){receipt(t);printReceipt(t,'printer')}return true}
  if(a==='prnbt'){prnDo(()=>Prn.btConnect(),'Printer Bluetooth terhubung.');return true}
  if(a==='prnusb'){prnDo(()=>Prn.usbConnect(),'Printer USB terhubung.');return true}
  if(a==='prnser'){prnDo(()=>Prn.serConnect(Prn.get().baud),'Printer serial terhubung.');return true}
