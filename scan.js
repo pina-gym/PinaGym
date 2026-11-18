@@ -50,8 +50,9 @@ function closeCI(){clearTimeout(ciTimer);const el=document.getElementById('ci');
 
 let lastScan={code:'',t:0,src:''};
 function doScan(raw,src){
- if(!canScan())return false;
  const code=String(raw||'').trim();if(!code)return false;
+ if(typeof prodScan==='function'&&prodScan(code,src))return true;
+ if(!canScan())return false;
  const now=Date.now();if(src==='camera'&&code.toUpperCase()===lastScan.code&&now-lastScan.t<4000)return false; // kamera membaca QR yang sama berulang
  lastScan={code:code.toUpperCase(),t:now,src};S.lastScan={code:code.toUpperCase(),src,at:hhmm()};
  const r=checkinCode(code);showCI(r);
@@ -61,7 +62,7 @@ function doScan(raw,src){
 /* ---- scanner keyboard (USB atau Bluetooth HID) ---- */
 let buf='',gaps=[],lastT=0,idleT=0;
 const fastOK=()=>buf.length>=4&&gaps.length>=3&&gaps.every(g=>g<=140)&&gaps.reduce((a,b)=>a+b,0)/gaps.length<=70;
-function finish(e,tgt){const code=buf,ok=fastOK()&&/GYM\d+/i.test(code);buf='';gaps=[];clearTimeout(idleT);
+function finish(e,tgt){const code=buf,ok=fastOK()&&(/GYM\d+/i.test(code)||(typeof prodFind==='function'&&!!prodFind(code)));buf='';gaps=[];clearTimeout(idleT);
  if(!ok)return false;
  if(tgt&&(tgt.tagName==='INPUT'||tgt.tagName==='TEXTAREA')&&typeof tgt.value==='string'&&tgt.type!=='checkbox'){tgt.value=tgt.value.replace(code,'');tgt.dispatchEvent(new Event('input',{bubbles:true}))}
  if(e){e.preventDefault();e.stopPropagation()}
@@ -73,7 +74,7 @@ addEventListener('keydown',e=>{
  if(e.key.length!==1)return;
  if(t-lastT>200){buf='';gaps=[]}else gaps.push(t-lastT);
  buf+=e.key;lastT=t;
- clearTimeout(idleT);idleT=setTimeout(()=>{if(/^GYM\d+$/i.test(buf))finish(null,document.activeElement);else{buf='';gaps=[]}},160)},true);
+ clearTimeout(idleT);idleT=setTimeout(()=>{if(/^GYM\d+$/i.test(buf)||(typeof prodFind==='function'&&prodFind(buf)))finish(null,document.activeElement);else{buf='';gaps=[]}},160)},true);
 
 /* ---- scanner serial (USB COM / Bluetooth serial) ---- */
 let ser={port:null,on:false,name:''};
@@ -107,7 +108,7 @@ async function camStart(){
  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){cam.err='Browser ini tidak bisa mengakses kamera (butuh HTTPS).';uiRefresh();return false}
  try{cam.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:sget().facing||'environment'},width:{ideal:1280}},audio:false})}
  catch(e){cam.err='Kamera ditolak atau tidak ada: '+(e.message||e.name);uiRefresh();return false}
- if('BarcodeDetector' in window){try{cam.det=new BarcodeDetector({formats:['qr_code']})}catch(e){cam.det=null}}
+ if('BarcodeDetector' in window){try{cam.det=new BarcodeDetector({formats:['qr_code','ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf']})}catch(e){cam.det=null}}
  if(!cam.det&&!(await loadJsQR())){cam.err='Browser tidak punya pembaca QR bawaan dan pustaka cadangan gagal dimuat (butuh internet sekali). Pakai scanner USB/Bluetooth.';camStop();uiRefresh();return false}
  let box=document.getElementById('camp');if(!box){box=document.createElement('div');box.id='camp';box.innerHTML='<video playsinline muted autoplay></video><button class="ci-x" data-a="camoff" aria-label="Matikan kamera">×</button><button class="ci-m" type="button" aria-label="Kecilkan kamera">–</button><small>Kamera check-in aktif · geser untuk memindah</small>';document.body.appendChild(box);campInit(box)}
  const v=box.querySelector('video');v.srcObject=cam.stream;await v.play().catch(()=>{});cam.on=true;sset({cam:1});

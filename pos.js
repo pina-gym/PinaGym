@@ -1,7 +1,7 @@
 /* pos.js: POS sekali ketuk (gaya PinaPOS): produk & paket membership sebagai tile, keranjang ringkas, tombol bayar mengambang */
 const pOpts=()=>({canReg:can('member.create'),canExt:can('member.extend')});
 function posItems(){const o=pOpts(),q=String(S.pf||'').trim().toLowerCase(),tab=S.ptab||'all',L=[];
- if(tab!=='pkg')S.products.forEach(p=>{if(!q||p.name.toLowerCase().includes(q))L.push({k:'p',id:p.id,name:p.name,price:p.price,sub:p.stock<=0?'Habis':'Stok '+p.stock,off:p.stock<=0,n:S.cart[p.id]||0})});
+ if(tab!=='pkg')S.products.forEach(p=>{if(!q||p.name.toLowerCase().includes(q)||(p.bc&&String(p.bc).toLowerCase().includes(q)))L.push({k:'p',id:p.id,name:p.name,price:p.price,sub:p.stock<=0?'Habis':'Stok '+p.stock,off:p.stock<=0,n:S.cart[p.id]||0})});
  if(tab!=='prod'&&(o.canReg||o.canExt))PKG.filter(p=>p.on).forEach(p=>{if(!q||p.name.toLowerCase().includes(q))L.push({k:'k',id:p.id,name:p.name,price:p.price,sub:isDaily(p)?'Harian · tanpa kartu':p.days+' hari'+(p.pt?' + Trainer':''),n:S.ppk===p.id?1:0})});
  return L}
 const posTiles=()=>{const L=posItems();return L.length?L.map(i=>`<button type="button" class="tile${i.k==='k'?' pk':''}${i.n?' on':''}" data-a="${i.k==='k'?'ppick':'padd'}" data-v="${i.id}"${i.off?' disabled':''}>${i.n?`<span class="qb">${i.k==='k'?'✓':i.n}</span>`:''}${i.k==='k'?'<small class="tg">Paket</small>':''}<b>${esc(i.name)}</b><span class="pr">${rp(i.price)}</span><small>${i.sub}</small></button>`).join(''):'<p class="mut">Tidak ada yang cocok.</p>'};
@@ -28,7 +28,7 @@ P.pos=()=>{const n=cartCount();
  const tab=S.ptab||'all',tabs=[['all','Semua'],['prod','Produk'],['pkg','Paket']];
  return`${S.shift?'':'<div class="note">Shift belum dibuka. Buka shift di menu Shift Kasir.</div>'}
  ${S.pmem&&S.members.find(x=>x.id===S.pmem)?`<p class="note pill" style="margin:0 0 10px;flex-wrap:wrap"><span>Pelanggan: <b>${esc(S.members.find(x=>x.id===S.pmem).name)}</b> <span class="mut">${S.members.find(x=>x.id===S.pmem).code}</span></span><button class="btn sm ghost" data-a="pmclear">Lepas</button></p>`:''}
- <div class="ptb"><input id="pfq" type="search" placeholder="Cari produk atau paket" value="${esc(S.pf||'')}" autocomplete="off"><span class="seg">${tabs.map(t=>`<button type="button" class="${tab===t[0]?'on':''}" data-a="ptab" data-v="${t[0]}">${t[1]}</button>`).join('')}</span></div>
+ <div class="ptb"><input id="pfq" type="search" placeholder="Cari / scan barcode produk" value="${esc(S.pf||'')}" autocomplete="off"><span class="seg">${tabs.map(t=>`<button type="button" class="${tab===t[0]?'on':''}" data-a="ptab" data-v="${t[0]}">${t[1]}</button>`).join('')}</span></div>
  <div id="ptiles" class="tiles">${posTiles()}</div>
  <div class="padgap"></div>
  <div class="paybar"><div><small class="mut">${n?n+' item':'Keranjang kosong'}</small><br><b id="posTotal">${rp(posTotal())}</b></div><button class="btn" data-a="cartopen"${n?'':' disabled'}>${ico('cart')} Lihat pesanan</button></div>`};

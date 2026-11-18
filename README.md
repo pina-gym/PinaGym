@@ -63,3 +63,5 @@ Aplikasi membuka WhatsApp dengan nomor dan pesan sudah terisi, lalu Anda menekan
 Printer, scanner, dan kamera memakai Web Bluetooth/WebUSB/Web Serial dan BarcodeDetector: berjalan di Chrome/Edge (Android dan komputer), tidak di iPhone/iPad. Backup otomatis hanya berjalan saat aplikasi terbuka dan online.
 
 - **Role Trainer**: hanya bisa membuka menu Trainer dan Sesi Trainer (hanya lihat). Di Manajemen User, user bisa dikaitkan ke satu trainer supaya hanya melihat member dan sesinya sendiri. Role Receptionist sudah dihapus.
+- **Total Keseluruhan** (Laporan dan Dashboard admin): omzet harian, mingguan, bulanan, tahunan dan seluruh waktu, dipisah penjualan produk, member harian, member bulanan, member tahunan.
+- **Barcode produk**: isi barcode di Produk & Stok; di POS ketik/scan di kolom cari lalu Enter, atau pakai scanner USB/Bluetooth dan kamera.

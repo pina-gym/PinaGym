@@ -82,6 +82,6 @@ async function share(m,o,text,waUrl){
  const b=pdf(m,o),name='Kartu-'+m.code+'.pdf',f=new File([b],name,{type:'application/pdf'});
  try{if(/Android|iPhone|iPad/i.test(navigator.userAgent)&&navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],text,title:'Kartu Member '+o.gym});return'shared'}}
  catch(e){if(e&&e.name==='AbortError')return'cancel'}
- download(b,name);if(waUrl)window.open(waUrl,'_blank','noopener');return'download'}
+ download(b,name);if(waUrl)openWa(waUrl);return'download'}
 
 return{svg,pdf,sheetPdf,print,download,share,jpg,SHEET}})();

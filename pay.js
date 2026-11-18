@@ -54,7 +54,7 @@ function printLines(L){let box=document.getElementById('printrc');if(box)box.rem
  setTimeout(()=>{try{window.print()}catch(e){done()}setTimeout(()=>{if(box.isConnected&&!/Android|iPhone|iPad/i.test(navigator.userAgent))done()},1500)},60)}
 async function shareFile(blob,name,text,waUrl){const f=new File([blob],name,{type:'application/pdf'});
  try{if(/Android|iPhone|iPad/i.test(navigator.userAgent)&&navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],text,title:name});return'shared'}}catch(e){if(e&&e.name==='AbortError')return'cancel'}
- Card.download(blob,name);if(waUrl)window.open(waUrl,'_blank','noopener');return'download'}
+ Card.download(blob,name);if(waUrl)openWa(waUrl);return'download'}
 const slipName=(s,ym)=>'Slip-Gaji-'+asc(s.name).replace(/\W+/g,'-')+'-'+ym+'.pdf';
 function slipText(s,ym){return'Halo '+s.name+', berikut slip gaji '+ymLbl(ym)+' dari '+S.settings.gym_name+'. Total diterima: Rp '+fnum(s.total)+(s.kind==='trainer'?' (gaji pokok Rp '+fnum(s.base)+' + komisi '+s.pct+'% Rp '+fnum(s.com)+' dari '+s.count+' sesi)':' (gaji pokok)')+'.'}
 
