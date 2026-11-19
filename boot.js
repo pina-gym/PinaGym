@@ -2,7 +2,7 @@
    KV menyediakan get/set sinkron dari memori; penulisan ke IndexedDB menyusul (ditunda sebentar dan digabung).
    Data lama di localStorage dipindahkan otomatis. Bila IndexedDB tidak tersedia, KV memakai localStorage seperti sebelumnya. */
 (function(){
-const FILES=['qr.js','card.js','sync.js','app.js','ui.js','ext.js','scan.js','print.js','pay.js','xlsx.js','extra.js','pt.js','pos.js','logo.js','cards.js','daily.js','barcode.js','totals.js','remind.js','shift.js','storeui.js','syncdb.js'];
+const FILES=['qr.js','card.js','sync.js','app.js','ui.js','ext.js','scan.js','print.js','pay.js','xlsx.js','extra.js','pt.js','pos.js','logo.js','cards.js','daily.js','barcode.js','totals.js','remind.js','shift.js','search.js','storeui.js','syncdb.js'];
 const BIG=['pinagym.v1','pinagym.sy','pinagym.prerestore'];
 const mem={},dirty=new Set();let db=null,timer=0,chain=Promise.resolve();
 const ls={g:k=>{try{return localStorage.getItem(k)}catch(e){return null}},s:(k,v)=>{localStorage.setItem(k,v)},d:k=>{try{localStorage.removeItem(k)}catch(e){}}};

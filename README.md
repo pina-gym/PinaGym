@@ -73,3 +73,6 @@ Data disimpan di IndexedDB (kapasitas ratusan MB), bukan lagi localStorage (~5 M
 
 ## Lupa password (v40)
 Hanya untuk admin dan **wajib PIN pemulihan** (min. 6 karakter, diatur di Manajemen User). Tanpa PIN fitur nonaktif. Salah 5 kali = terkunci 15 menit (tersimpan, tidak hilang saat muat ulang). Password baru min. 8 karakter.
+
+## Pencarian daftar (v41)
+Riwayat Kunjungan, Transaksi, Cetak Ulang, dan Log Aktivitas punya kotak cari yang menelusuri **seluruh** data (bukan hanya yang tampil) + tombol "Tampilkan lebih banyak". Tabel lain yang panjang (≥6 baris) otomatis mendapat kotak cari (search.js).
