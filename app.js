@@ -57,7 +57,7 @@ function migrate(d){if((d.v||1)>=2)return d;const pm={},mm={};
  d.tx=(d.tx||[]).map(t=>({...t,id:uid()}));
  d.tpl=(d.tpl||[]).map(t=>({...t,id:'t'+t.id}));d.v=2;return d}
 function hydrate(d){d=migrate(d);['members','tx','checkins','products','tpl','users','log','wlog','trainers','tsess','visits','shifts','promos','opname','padj'].forEach(k=>{if(Array.isArray(d[k]))S[k]=d[k]});if(d.dev)S.dev=d.dev;if(!Array.isArray(d.shifts)&&!S.shifts.length&&d.shift!==false)S.shifts=S.users.filter(u=>u.role==='admin'||u.role==='kasir').map(u=>({id:uid(),by:u.id,date:T0,time:'00:00',cash0:0,end:null,migrated:1}));if(d.settings)Object.assign(S.settings,d.settings);if(Array.isArray(d.pkg)){PKG.length=0;PKG.push(...d.pkg)}if(d.rolePerms)Object.keys(S.rolePerms).forEach(k=>{if(Array.isArray(d.rolePerms[k]))S.rolePerms[k]=new Set(d.rolePerms[k])});{const kn=new Set(d.known||ALL.filter(x=>!NEWP.includes(x)));if(!d.pv){S.rolePerms.kasir.add('attendance.checkin');S.rolePerms.kasir.add('attendance.view')}CAT.forEach(c=>{if(!kn.has(c[0]))Object.keys(ROLEDEF).forEach(r=>{if(ROLEDEF[r].includes(c[0]))S.rolePerms[r].add(c[0])})});S.rolePerms.admin=new Set(ALL)}S.users=S.users.filter(u=>ROLES[u.role]&&!u.cloud);S.users=S.users.filter((u,i,a)=>a.findIndex(x=>x.id===u.id)===i);S.shift=!!d.shift;S.seq=d.seq||1000;S.wa={t:S.tpl[0]?S.tpl[0].id:'t1',g:'new'}}
-function persist(){try{localStorage.setItem(KEY,JSON.stringify(snap()))}catch(e){}}
+function persist(){KV.setLazy(KEY,()=>JSON.stringify(snap()))}
 const rndSalt=()=>[...crypto.getRandomValues(new Uint8Array(16))].map(x=>x.toString(16).padStart(2,'0')).join('');
 async function hashPw(pw,salt){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);const b=await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode(salt),iterations:150000,hash:'SHA-256'},k,256);return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 async function setPw(u,pw){u.salt=rndSalt();u.ph=await hashPw(pw,u.salt);u.def=0}
@@ -78,7 +78,7 @@ addEventListener('appinstalled',()=>{window._ip=null;render()});
 function installApp(){const e=window._ip;if(!e)return;e.prompt();e.userChoice.finally(()=>{window._ip=null;render()})}
 ['online','offline'].forEach(ev=>addEventListener(ev,()=>{const n=$('#net');if(n){n.textContent=navigator.onLine?'Online':'Offline';n.className='bd '+(navigator.onLine?'b-ok':'b-warn')}}));
 
-const APPV='v38';
+const APPV='v40';
 const trainerOf=u=>u&&u.tid?S.trainers.find(t=>t.id===u.tid):null;
 const eff=()=>S.rolePerms[S.user.role];
 const can=p=>{const e=eff();return[].concat(p).some(x=>e.has(x))};
@@ -219,7 +219,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,k=f.d
  else if(k==='settings'){Object.keys(d).forEach(x=>S.settings[x]=isNaN(d[x])||d[x]===''?d[x]:+d[x]);log('ubah_pengaturan');toast('Pengaturan disimpan.')}
 });
 addEventListener('hashchange',()=>{const k=(location.hash||'').slice(1);if(S.user&&MENU.some(m=>m[0]===k)&&k!==S.page){S.page=k;render()}});
-addEventListener('DOMContentLoaded',()=>(async()=>{let d=null;try{d=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
+addEventListener('DOMContentLoaded',()=>(async()=>{let d=null;try{d=JSON.parse(KV.get(KEY)||'null')}catch(e){}
  if(d&&Array.isArray(d.users))hydrate(d);else{seedData();await seedUsers();persist()}
  if(!S.users.some(u=>u.role==='admin'&&u.on&&u.ph)){S.users=S.users.filter(u=>u.username!=='admin');S.users.unshift({id:'admin',name:'Administrator',username:'admin',role:'admin',on:1});await seedUsers();log('admin_dibuat_ulang');persist()}
  restoreSession();render();startIdle();

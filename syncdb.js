@@ -3,9 +3,9 @@
    Jalan otomatis (dibuka, tiap 90 dtk, setelah ada perubahan, saat kembali online) dan lewat tombol Sinkron. */
 const SY=(()=>{
 const KS='pinagym.sy',KO='pinagym.syoff';
-const jr=()=>{try{return JSON.parse(localStorage.getItem(KS)||'null')}catch(e){return null}};
+const jr=()=>{try{return JSON.parse(KV.get(KS)||'null')}catch(e){return null}};
 let sy=jr()||{cur:0,r:{},pend:{},joined:false,last:0};
-const save=()=>{try{localStorage.setItem(KS,JSON.stringify(sy))}catch(e){}};
+const save=()=>{try{KV.setLazy(KS,()=>JSON.stringify(sy))}catch(e){}};
 const st={busy:false,err:'',msg:'',up:0,down:0,join:null};
 const on=()=>localStorage.getItem(KO)!=='1';
 const h53=s=>{let a=0xdeadbeef,b=0x41c6ce57;for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);a=Math.imul(a^c,2654435761);b=Math.imul(b^c,1597334677)}a=Math.imul(a^(a>>>16),2246822507)^Math.imul(b^(b>>>13),3266489909);b=Math.imul(b^(b>>>16),2246822507)^Math.imul(a^(a>>>13),3266489909);return(4294967296*(2097151&b)+(a>>>0)).toString(36)};
@@ -58,7 +58,7 @@ function after(changed){if(!changed)return;
  if(me){const u=S.users.find(x=>x.id===me&&x.on);if(u)S.user=u;else{S.user=null}}
  try{persistRaw()}catch(e){}
  try{if(!S.user)render();else if(!document.querySelector('#modal .modal')&&!/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||''))renderView()}catch(e){}}
-let persistRaw=()=>{try{localStorage.setItem(KEY,JSON.stringify(snap()))}catch(e){}};
+let persistRaw=()=>{try{KV.setLazy(KEY,()=>JSON.stringify(snap()))}catch(e){}};
 
 async function run(why){
  if(st.busy||!ready()||!navigator.onLine)return{ok:false};
@@ -135,7 +135,7 @@ grant usage, select on sequence public.sync_seq to authenticated;`;
  if(a==='syncnow'){SY.run('manual').then(r=>{if(r.ok)toast('Sinkron selesai: '+SY.st.msg);else if(!r.ask)toast(SY.st.err||'Sinkron belum bisa dijalankan (hubungkan Supabase / periksa internet).')});SY.ui();return true}
  if(a==='syauto'){if(can('backup.manage')){SY.setOn(!SY.on());render()}return true}
  if(a==='syfull'){if(!can('backup.manage'))return true;CUR={a,v,d:{...el.dataset}};if(!ask('syfull','Ambil ulang SEMUA data dari server? Data di perangkat ini diganti dengan data server. Perubahan yang belum terkirim akan hilang. Salinan data sekarang disimpan dulu di perangkat.','Ya, ambil ulang'))return true;
-  try{localStorage.setItem('pinagym.prerestore',JSON.stringify(snap()))}catch(e){}
+  try{KV.set('pinagym.prerestore',JSON.stringify(snap()))}catch(e){}
   SY.reset(true);SY.run('full').then(r=>{if(!r.ok&&SY.st.err)toast(SY.st.err)});return true}
  if(a==='syreplace'){SY.joinDo('replace');return true}
  if(a==='symerge'){SY.joinDo('merge');return true}

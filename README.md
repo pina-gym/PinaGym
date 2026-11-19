@@ -67,3 +67,9 @@ Printer, scanner, dan kamera memakai Web Bluetooth/WebUSB/Web Serial dan Barcode
 - **Barcode produk**: isi barcode di Produk & Stok; di POS ketik/scan di kolom cari lalu Enter, atau pakai scanner USB/Bluetooth dan kamera.
 - **Lonceng notifikasi** (bilah atas, Admin dan Kasir): badge jumlah member yang membership-nya berakhir 7 hari lagi atau habis hari ini; ketuk untuk membuka daftar dan kirim WhatsApp pengingat per member. Yang sudah dikirim hilang dari daftar. Setelah member baru terdaftar, muncul pop up kirim WA selamat datang + kartu.
 - **Shift kasir**: buka shift dengan modal awal kas; saat tutup, kasir mengisi kas fisik dan aplikasi menampilkan rekap (produk, member harian/bulanan/tahunan, tunai vs non-tunai/QRIS, kas seharusnya, selisih). Riwayat shift per kasir; admin bisa melihat semua dan menutup paksa shift yang lupa ditutup. POS hanya bisa dipakai bila shift pengguna sedang terbuka.
+
+## Penyimpanan data (v39)
+Data disimpan di IndexedDB (kapasitas ratusan MB), bukan lagi localStorage (~5 MB). Migrasi otomatis saat pertama dibuka; salinan lama dihapus setelah berhasil. Jika penyimpanan gagal, muncul banner merah. Lihat pemakaian di Pengaturan → Sistem → "Penyimpanan data". Tetap aktifkan sinkron Supabase dan unduh backup berkala.
+
+## Lupa password (v40)
+Hanya untuk admin dan **wajib PIN pemulihan** (min. 6 karakter, diatur di Manajemen User). Tanpa PIN fitur nonaktif. Salah 5 kali = terkunci 15 menit (tersimpan, tidak hilang saat muat ulang). Password baru min. 8 karakter.

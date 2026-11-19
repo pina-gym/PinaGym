@@ -52,7 +52,7 @@ const fmtDT=iso=>{try{return new Date(iso).toLocaleString('id-ID',{timeZone:'Asi
 const nmsg=(t,x)=>`<div class="note" style="background:var(--${t==='ok'?'ok':t==='err'?'err':'warn'}-bg);color:var(--${t==='ok'?'ok':t==='err'?'err':'warn'})">${esc(x)}</div>`;
 function restoreData(d){
  if(!d||!Array.isArray(d.users)||!Array.isArray(d.members))throw new Error('Isi backup tidak valid');
- try{localStorage.setItem('pinagym.prerestore',JSON.stringify(snap()))}catch(e){}
+ try{KV.set('pinagym.prerestore',JSON.stringify(snap()))}catch(e){}
  const me=S.user&&S.user.id;hydrate(d);S.user=S.users.find(u=>u.id===me&&u.on)||null;S.myPerms=null;Object.values(S.sel).forEach(x=>x.clear());saveSession();log('backup_pulihkan')}
 P.backup=()=>{const c=SB.cfg(),st=SB.st,live=SB.live(),last=SB.last(),kb=Math.round(JSON.stringify(snap()).length/1024);
  if(live&&st.list===null&&!st.loading)setTimeout(()=>SB.list().then(()=>{if(!SB.st.list)SB.st.list=[];if(S.page==='backup')renderView()}),0);

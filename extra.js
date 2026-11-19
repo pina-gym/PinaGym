@@ -112,20 +112,26 @@ function vcf(list){return list.map(m=>`BEGIN:VCARD\r\nVERSION:3.0\r\nFN:${vEsc(S
 
 /* ---------- pemulihan akun & perbaikan versi ---------- */
 async function clearApp(){try{const rs=await navigator.serviceWorker.getRegistrations();for(const r of rs)await r.unregister()}catch(e){}try{for(const k of await caches.keys())await caches.delete(k)}catch(e){}location.reload()}
-P.users=(()=>{const _pu=P.users;return()=>_pu()+`<form class="card form" data-f="recpin"><h2>PIN pemulihan admin</h2><p class="mut">${S.settings.rec_ph?'PIN sudah diatur.':'Belum diatur.'} Dipakai di layar login ("Lupa password?") untuk mengatur ulang password admin. Tanpa PIN, siapa pun di perangkat ini bisa mengatur ulang password admin dengan mengetik RESET. Isi PIN agar hanya Anda yang bisa.</p>${fld('PIN baru (min. 4 karakter)','pin','','password','minlength="4" autocomplete="new-password"')}<div class="pill"><button class="btn">Simpan PIN</button>${S.settings.rec_ph?'<button type="button" class="btn ghost" data-a="recclear">Hapus PIN</button>':''}</div></form>`})();
+P.users=(()=>{const _pu=P.users;return()=>_pu()+`<form class="card form" data-f="recpin"><h2>PIN pemulihan admin</h2>${S.settings.rec_ph?'':'<p style="color:#b91c1c;font-weight:600">⚠ PIN belum diatur — fitur "Lupa password" dinonaktifkan demi keamanan. Atur PIN sekarang.</p>'}<p class="mut">${S.settings.rec_ph?'PIN sudah diatur.':''} PIN wajib untuk "Lupa password?" di layar login. Simpan PIN di tempat aman; jangan dibagikan ke kasir/trainer. Salah 5 kali = terkunci 15 menit.</p>${fld('PIN baru (min. 6 karakter)','pin','','password','minlength="6" autocomplete="new-password"')}<div class="pill"><button class="btn">Simpan PIN</button>${S.settings.rec_ph?'<button type="button" class="btn ghost" data-a="recclear">Hapus PIN</button>':''}</div></form>`})();
 {const _ecR=extraClick;extraClick=function(a,v,el){
  if(a==='fixapp'){clearApp();return true}
- if(a==='forgot'){fm('Lupa password','forgot','',`<p class="mut">Hanya untuk akun <b>admin</b> di perangkat ini. Akun kasir/trainer direset oleh admin di Manajemen User.</p>${fld('Username admin','username','admin','text','required autocomplete="off"')}${S.settings.rec_ph?fld('PIN pemulihan','pin','','password','required autocomplete="off"'):fld('Ketik RESET untuk melanjutkan','confirm','','text','required autocomplete="off"')}${fld('Password baru (min. 6)','password','','password','minlength="6" required autocomplete="new-password"')}`);return true}
+ if(a==='forgot'){if(!S.settings.rec_ph){fm('Lupa password','noop','',`<p>Fitur ini dinonaktifkan karena <b>PIN pemulihan belum diatur</b>.</p><p class="mut">Admin yang masih bisa masuk: buka Manajemen User → atur PIN pemulihan. Jika sudah terlanjur lupa dan tidak ada PIN, pulihkan lewat file backup atau hubungi pengembang.</p>`);return true}
+  fm('Lupa password','forgot','',`<p class="mut">Hanya untuk akun <b>admin</b>. Akun kasir/trainer direset oleh admin di Manajemen User.</p>${fld('Username admin','username','admin','text','required autocomplete="off"')}${fld('PIN pemulihan','pin','','password','required autocomplete="off"')}${fld('Password baru (min. 8)','password','','password','minlength="8" required autocomplete="new-password"')}`);return true}
  if(a==='recclear'){if(!can('user.manage'))return true;if(!ask('rcl','Hapus PIN pemulihan?','Ya, hapus'))return true;delete S.settings.rec_ph;delete S.settings.rec_salt;log('pin_pemulihan_hapus');render();return true}
  return _ecR.apply(this,arguments)}}
 {const _esR=extraSubmit;extraSubmit=function(k,d,f){
+ if(k==='noop'){modal('');return true}
  if(k==='forgot'){const un=String(d.username).trim().toLowerCase(),u=S.users.find(x=>x.username===un&&x.role==='admin');
-  (async()=>{S.fr=(S.fr||0)+1;if(S.fr>5){toast('Terlalu banyak percobaan. Muat ulang halaman.');return}
-   if(!u){toast('Akun admin tidak ditemukan.');return}
-   if(S.settings.rec_ph){if((await hashPw(String(d.pin),S.settings.rec_salt))!==S.settings.rec_ph){toast('PIN salah.');return}}
-   else if(String(d.confirm).trim().toUpperCase()!=='RESET'){toast('Ketik RESET untuk melanjutkan.');return}
-   if(String(d.password).length<6){toast('Password minimal 6 karakter.');return}
+  (async()=>{let st={n:0,u:0};try{st=JSON.parse(localStorage.getItem('pinagym.frl')||'')||st}catch(e){}
+   const sv=()=>{try{localStorage.setItem('pinagym.frl',JSON.stringify(st))}catch(e){}};
+   if(Date.now()<st.u){toast('Terkunci. Coba lagi dalam '+Math.ceil((st.u-Date.now())/60000)+' menit.');return}
+   const bad=m=>{st.n=(st.n||0)+1;if(st.n>=5){st.u=Date.now()+15*60000;st.n=0;m='Terlalu banyak percobaan. Terkunci 15 menit.'}sv();log('lupa_pw_gagal',un.slice(0,40));toast(m)};
+   if(!S.settings.rec_ph){toast('PIN pemulihan belum diatur.');return}
+   const okPin=(await hashPw(String(d.pin),S.settings.rec_salt))===S.settings.rec_ph;
+   if(!u||!okPin){bad('Username atau PIN salah.');return}
+   if(String(d.password).length<8){toast('Password minimal 8 karakter.');return}
+   st={n:0,u:0};sv();
    await setPw(u,String(d.password));u.on=1;S.lock=0;S.f=0;S.msg='';log('reset_password_admin',u.username);persist();modal('');render();toast('Password admin diperbarui. Silakan masuk.')})();return true}
- if(k==='recpin'){if(!can('user.manage'))return true;const pin=String(d.pin||'');if(pin.length<4){toast('PIN minimal 4 karakter.');return true}
+ if(k==='recpin'){if(!can('user.manage'))return true;const pin=String(d.pin||'');if(pin.length<6){toast('PIN minimal 6 karakter.');return true}
   (async()=>{S.settings.rec_salt=rndSalt();S.settings.rec_ph=await hashPw(pin,S.settings.rec_salt);log('pin_pemulihan_atur');render();toast('PIN pemulihan disimpan.')})();return true}
  return _esR.apply(this,arguments)}}
